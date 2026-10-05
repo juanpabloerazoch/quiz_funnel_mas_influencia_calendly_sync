@@ -179,9 +179,31 @@ input:focus{border-color:var(--accent)}
 <script>
 const DESTINATION_URL = "https://calendly.com/masinfluencia-info/mentoria-de-claridad-influencia-con-juan-y-sar-clone";
 
-// Captura el ID del contacto de ManyChat que llega en la URL: ?mc_id=...
+// Captura el contacto de ManyChat.
+// ManyChat puede enviarlo como ?mc_id=... o dentro de ?mcp_token=...
 const urlParams = new URLSearchParams(window.location.search);
-const mcIdFromUrl = urlParams.get("mc_id");
+
+function getManychatContactId() {
+  const directId = urlParams.get("mc_id");
+  if (directId) return directId;
+
+  const mcpToken = urlParams.get("mcp_token");
+  if (mcpToken) {
+    try {
+      const payloadPart = mcpToken.split(".")[0];
+      const normalized = payloadPart.replace(/-/g, "+").replace(/_/g, "/");
+      const padded = normalized + "=".repeat((4 - normalized.length % 4) % 4);
+      const payload = JSON.parse(atob(padded));
+      if (payload && payload.sid) return String(payload.sid);
+    } catch (err) {
+      console.warn("No se pudo leer mcp_token de ManyChat:", err);
+    }
+  }
+
+  return "";
+}
+
+const mcIdFromUrl = getManychatContactId();
 
 // Lo conservamos por si la persona recarga la página durante el quiz.
 if (mcIdFromUrl) {
