@@ -132,8 +132,22 @@ async function syncQuizToManychat(lead, scoresText) {
   // Probamos cada API key hasta encontrar la cuenta de ManyChat a la que pertenece el contacto.
   for (const item of apiKeys) {
     try {
+      const fieldResults = [];
+      let successfulFields = 0;
+
       for (const [fieldName, fieldValue] of fields) {
-        await setManychatField(item.key, subscriberId, fieldName, fieldValue);
+        try {
+          await setManychatField(item.key, subscriberId, fieldName, fieldValue);
+          successfulFields += 1;
+          fieldResults.push({ field: fieldName, ok: true });
+        } catch (fieldError) {
+          console.warn(`ManyChat field failed account=${item.account} field=${fieldName} subscriber=${subscriberId}: ${fieldError.message}`);
+          fieldResults.push({ field: fieldName, ok: false, error: fieldError.message });
+        }
+      }
+
+      if (successfulFields === 0) {
+        throw new Error("No ManyChat fields could be updated for this account");
       }
 
       await manychatPost("/fb/subscriber/addTagByName", item.key, {
@@ -144,7 +158,9 @@ async function syncQuizToManychat(lead, scoresText) {
       return {
         attempted: true,
         synced: true,
-        account: item.account
+        account: item.account,
+        fields_updated: successfulFields,
+        fields: fieldResults
       };
     } catch (error) {
       lastError = error;
