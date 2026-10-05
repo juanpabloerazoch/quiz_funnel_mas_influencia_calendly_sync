@@ -98,24 +98,25 @@ async function setManychatField(apiKey, subscriberId, fieldName, fieldValue) {
 }
 
 async function syncQuizToManychat(lead, scoresText) {
-  const apiKey = (process.env.MANYCHAT_API_KEY || "").trim();
   const subscriberId = String(lead.mc_id || "").trim();
+  const apiKeys = [
+    { account: "sara", key: (process.env.MANYCHAT_API_KEY || "").trim() },
+    { account: "juan", key: (process.env.MANYCHAT_API_KEY_JUAN || "").trim() }
+  ].filter(item => item.key);
 
   // El quiz también puede abrirse fuera de ManyChat.
   // En ese caso seguimos guardando el lead en Notion, pero no intentamos sincronizarlo.
-  if (!apiKey || !subscriberId) {
+  if (!subscriberId || !apiKeys.length) {
     return {
       attempted: false,
       synced: false,
-      reason: !apiKey ? "MANYCHAT_API_KEY missing" : "mc_id missing"
+      reason: !subscriberId ? "mc_id missing" : "ManyChat API keys missing"
     };
   }
 
   const result = QUIZ_RESULT_MAP[lead.segment] || QUIZ_RESULT_MAP.clarity;
   const diagnosis = SEGMENT_MAP[lead.segment] || SEGMENT_MAP.clarity;
 
-  // IMPORTANTE: primero actualizamos los campos.
-  // Solo después añadimos la etiqueta que dispara la automatización en ManyChat.
   const fields = [
     ["Diagnóstico Quiz", diagnosis],
     ["Conclusión Quiz", result.conclusion],
@@ -125,19 +126,33 @@ async function syncQuizToManychat(lead, scoresText) {
     ["Quiz completado", "Sí"]
   ];
 
-  for (const [fieldName, fieldValue] of fields) {
-    await setManychatField(apiKey, subscriberId, fieldName, fieldValue);
+  let lastError = null;
+
+  // El mismo quiz sirve para Sara y Juan.
+  // Probamos cada API key hasta encontrar la cuenta de ManyChat a la que pertenece el contacto.
+  for (const item of apiKeys) {
+    try {
+      for (const [fieldName, fieldValue] of fields) {
+        await setManychatField(item.key, subscriberId, fieldName, fieldValue);
+      }
+
+      await manychatPost("/fb/subscriber/addTagByName", item.key, {
+        subscriber_id: subscriberId,
+        tag_name: "QUIZ_COMPLETADO"
+      });
+
+      return {
+        attempted: true,
+        synced: true,
+        account: item.account
+      };
+    } catch (error) {
+      lastError = error;
+      console.warn(`ManyChat sync failed with ${item.account} key; trying next account.`);
+    }
   }
 
-  await manychatPost("/fb/subscriber/addTagByName", apiKey, {
-    subscriber_id: subscriberId,
-    tag_name: "QUIZ_COMPLETADO"
-  });
-
-  return {
-    attempted: true,
-    synced: true
-  };
+  throw lastError || new Error("ManyChat sync failed for all configured accounts");
 }
 
 export default async function handler(req, res) {
