@@ -159,6 +159,19 @@ async function syncQuizToManychat(lead, scoresText) {
   // Probamos cada API key hasta encontrar la cuenta de ManyChat a la que pertenece el contacto.
   for (const item of apiKeys) {
     try {
+      // Quitamos primero la etiqueta para que una nueva finalización del quiz
+      // pueda volver a disparar la automatización, incluso si el contacto ya había hecho el test antes.
+      try {
+        await manychatPost("/fb/subscriber/removeTagByName", item.key, {
+          subscriber_id: subscriberId,
+          tag_name: "QUIZ_COMPLETADO"
+        });
+        await sleep(350);
+      } catch (removeTagError) {
+        // Si la etiqueta no estaba puesta, continuamos normalmente.
+        console.warn(`ManyChat remove tag skipped account=${item.account}: ${removeTagError.message}`);
+      }
+
       const fieldResults = [];
       let successfulFields = 0;
 
