@@ -1,0 +1,404 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Diagnóstico de Identidad y Propósito | +Influencia</title>
+<meta name="description" content="Descubre qué está frenando hoy tu identidad y propósito, y cuál es tu siguiente paso." />
+<style>
+:root{
+  --bg:#0d0d0d;
+  --panel:#151515;
+  --panel2:#1b1b1b;
+  --text:#f5f1e8;
+  --muted:#bcb5a8;
+  --accent:#d6b979;
+  --accent2:#f0dfb1;
+  --line:#2b2b2b;
+  --danger:#e9a7a7;
+  --radius:24px;
+}
+*{box-sizing:border-box}
+body{
+  margin:0;
+  font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+  background:
+    radial-gradient(circle at top right, rgba(214,185,121,.12), transparent 30%),
+    linear-gradient(180deg,#0b0b0b,#111);
+  color:var(--text);
+  min-height:100vh;
+}
+.wrap{max-width:860px;margin:0 auto;padding:28px 18px 60px}
+.brand{font-weight:800;letter-spacing:.08em;font-size:14px;color:var(--accent2);margin-bottom:28px}
+.card{
+  background:rgba(21,21,21,.92);
+  border:1px solid var(--line);
+  border-radius:var(--radius);
+  padding:34px;
+  box-shadow:0 24px 80px rgba(0,0,0,.28);
+}
+h1{font-size:clamp(34px,6vw,62px);line-height:1.02;margin:0 0 18px;letter-spacing:-.03em}
+h2{font-size:clamp(26px,4vw,42px);line-height:1.08;margin:0 0 14px}
+h3{font-size:22px;margin:0 0 12px}
+p{font-size:18px;line-height:1.6;color:var(--muted);margin:0 0 18px}
+.eyebrow{color:var(--accent);font-weight:800;text-transform:uppercase;letter-spacing:.12em;font-size:12px;margin-bottom:14px}
+.btn{
+  display:inline-flex;align-items:center;justify-content:center;
+  width:100%;border:0;border-radius:16px;padding:17px 22px;
+  background:linear-gradient(180deg,var(--accent2),var(--accent));
+  color:#17130b;font-weight:800;font-size:17px;cursor:pointer;text-decoration:none;
+  transition:transform .15s ease,opacity .15s ease;
+}
+.btn:hover{transform:translateY(-1px)}
+.btn.secondary{background:#202020;color:var(--text);border:1px solid #343434}
+.meta{display:flex;gap:14px;flex-wrap:wrap;margin:22px 0}
+.chip{border:1px solid #343434;background:#171717;padding:9px 12px;border-radius:999px;color:#d8d2c6;font-size:14px}
+.hidden{display:none!important}
+.progress-wrap{margin-bottom:28px}
+.progress-top{display:flex;justify-content:space-between;color:#a8a195;font-size:13px;margin-bottom:9px}
+.progress{height:8px;background:#242424;border-radius:999px;overflow:hidden}
+.progress>div{height:100%;background:linear-gradient(90deg,var(--accent),var(--accent2));width:0;transition:width .3s ease}
+.options{display:grid;gap:12px;margin-top:24px}
+.option{
+  text-align:left;width:100%;padding:18px 18px;border-radius:16px;border:1px solid #343434;
+  background:#191919;color:var(--text);font-size:16px;line-height:1.35;cursor:pointer;
+  transition:all .16s ease;
+}
+.option:hover{border-color:var(--accent);background:#1f1d18}
+.result-teaser{
+  padding:22px;border-radius:18px;background:linear-gradient(180deg,#1d1b17,#151515);
+  border:1px solid rgba(214,185,121,.35);margin:20px 0
+}
+.steps{display:grid;gap:14px;margin:20px 0}
+.step{padding:18px;border-radius:16px;background:#191919;border:1px solid #2f2f2f}
+.step strong{display:block;color:var(--accent2);margin-bottom:7px}
+form{display:grid;gap:14px;margin-top:22px}
+label{display:grid;gap:7px;color:#d8d2c6;font-size:14px}
+input{
+  width:100%;padding:15px 16px;border-radius:14px;border:1px solid #353535;
+  background:#111;color:white;font-size:16px;outline:none
+}
+input:focus{border-color:var(--accent)}
+.note{font-size:13px;color:#8f897f;line-height:1.45}
+.center{text-align:center}
+.loader{width:54px;height:54px;border:5px solid #2b2b2b;border-top-color:var(--accent);border-radius:50%;margin:10px auto 22px;animation:spin 1s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.scorebar{margin:18px 0 0}
+.score-row{margin:12px 0}
+.score-label{display:flex;justify-content:space-between;font-size:13px;color:#c7c0b5;margin-bottom:7px}
+.score-track{height:9px;background:#242424;border-radius:999px;overflow:hidden}
+.score-fill{height:100%;background:linear-gradient(90deg,var(--accent),var(--accent2))}
+.footer{margin-top:24px;text-align:center;font-size:12px;color:#777}
+@media(max-width:640px){
+  .card{padding:24px 18px;border-radius:20px}
+  p{font-size:16px}
+  .option{font-size:15px}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="brand">+INFLUENCIA</div>
+
+  <section id="landing" class="card">
+    <div class="eyebrow">Diagnóstico de Identidad y Propósito</div>
+    <h1>Descubre qué está frenando hoy tu identidad y propósito, y cuál es tu siguiente paso.</h1>
+    <p>En menos de 4 minutos, Juan y Sara te ayudarán a identificar si tu principal cuello de botella está en la claridad de identidad y propósito, la toma de acción, la expansión de tu influencia o la alineación entre lo que has construido y la vida que sabes que estás llamado(a) a vivir.</p>
+    <div class="meta">
+      <div class="chip">7 preguntas</div>
+      <div class="chip">Resultado personalizado</div>
+      <div class="chip">Roadmap de 3 pasos</div>
+    </div>
+    <button class="btn" onclick="startQuiz()">Comenzar el Quiz</button>
+  </section>
+
+  <section id="quiz" class="card hidden">
+    <div class="progress-wrap">
+      <div class="progress-top"><span id="progressText">Pregunta 1 de 7</span><span id="progressPct">14%</span></div>
+      <div class="progress"><div id="progressBar"></div></div>
+    </div>
+    <div class="eyebrow" id="questionKicker">Tu situación actual</div>
+    <h2 id="questionTitle"></h2>
+    <div id="options" class="options"></div>
+  </section>
+
+  <section id="analyzing" class="card hidden center">
+    <div class="loader"></div>
+    <div class="eyebrow">Analizando tus respuestas...</div>
+    <h2>Estamos identificando tu cuello de botella principal.</h2>
+    <p>Tu resultado no es un texto genérico: cambia según el patrón de tus respuestas.</p>
+  </section>
+
+  <section id="capture" class="card hidden">
+    <div class="eyebrow">Tu diagnóstico está listo</div>
+    <h2 id="teaserTitle"></h2>
+    <div class="result-teaser">
+      <p id="teaserText"></p>
+    </div>
+    <p>Déjanos tus datos para mostrarte tu roadmap completo de 3 pasos.</p>
+    <form id="leadForm">
+      <label>Nombre
+        <input id="name" required placeholder="Tu nombre" />
+      </label>
+      <label>Email
+        <input id="email" type="email" required placeholder="tu@email.com" />
+      </label>
+      <label>WhatsApp
+        <input id="whatsapp" required placeholder="+57..." />
+      </label>
+      <label>Instagram
+        <input id="instagram" required placeholder="@tuusuario" />
+      </label>
+      <button class="btn" type="submit">Ver mi roadmap completo</button>
+      <div class="note">Tus datos se usan únicamente para entregarte este diagnóstico y dar seguimiento si decides solicitar una conversación con +Influencia.</div>
+    </form>
+  </section>
+
+  <section id="result" class="card hidden">
+    <div class="eyebrow">Tu resultado</div>
+    <h2 id="resultTitle"></h2>
+    <p id="resultIntro"></p>
+
+    <div class="scorebar" id="scoreBars"></div>
+
+    <h3 style="margin-top:28px">Tu roadmap de 3 pasos</h3>
+    <div id="roadmap" class="steps"></div>
+
+    <div class="result-teaser">
+      <h3>Tu siguiente conversación</h3>
+      <p id="ctaCopy">Si este diagnóstico puso nombre a algo que llevas tiempo sintiendo, puedes aplicar a una conversación con Juan y Sara. Allí profundizaremos en tu situación, veremos qué te está frenando y evaluaremos si nuestro acompañamiento es el espacio correcto para tu siguiente etapa.</p>
+      <a id="ctaButton" class="btn" href="https://calendly.com/masinfluencia-info/mentoria-de-claridad-influencia-con-juan-y-sar-clone" target="_blank" rel="noopener">Agendar mi llamada de diagnóstico</a>
+    </div>
+
+    <button class="btn secondary" onclick="restartQuiz()">Volver a realizar el diagnóstico</button>
+  </section>
+
+  <div class="footer">© Juan y Sara · +Influencia · Diagnóstico de Identidad y Propósito</div>
+</div>
+
+<script>
+const DESTINATION_URL = "https://calendly.com/masinfluencia-info/mentoria-de-claridad-influencia-con-juan-y-sar-clone";
+
+// Captura el ID del contacto de ManyChat que llega en la URL: ?mc_id=...
+const urlParams = new URLSearchParams(window.location.search);
+const mcIdFromUrl = urlParams.get("mc_id");
+
+// Lo conservamos por si la persona recarga la página durante el quiz.
+if (mcIdFromUrl) {
+  localStorage.setItem("mas_influencia_mc_id", mcIdFromUrl);
+}
+const MANYCHAT_CONTACT_ID =
+  mcIdFromUrl || localStorage.getItem("mas_influencia_mc_id") || "";
+
+const questions = [
+  {
+    kicker:"Tu situación actual",
+    title:"¿Cuál de estas frases describe mejor dónde estás hoy?",
+    options:[
+      {t:"Siento que fui creado(a) para más, pero todavía no tengo claridad de para qué.", s:{clarity:4}},
+      {t:"Sé bastante bien lo que quiero hacer, pero sigo postergando, dudando o frenándome.", s:{action:4}},
+      {t:"Tengo experiencia, conocimiento o un proyecto, pero no sé cómo convertirlo en una propuesta clara que genere impacto e ingresos.", s:{influence:4}},
+      {t:"He logrado cosas importantes, pero por dentro siento que algo no está alineado o que falta sentido.", s:{alignment:4}}
+    ]
+  },
+  {
+    kicker:"Tu situación deseada",
+    title:"Si los próximos 12 meses fueran realmente diferentes, ¿qué cambio sería más valioso para ti?",
+    options:[
+      {t:"Tener claridad sobre mi propósito, dirección y próximos pasos.", s:{clarity:3}},
+      {t:"Dejar de paralizarme y empezar a actuar con decisión y consistencia.", s:{action:3}},
+      {t:"Convertir lo que sé en una mentoría, servicio o proyecto que transforme vidas y produzca ingresos.", s:{influence:3}},
+      {t:"Sentir que mi vida, mi trabajo y mis decisiones están alineados con quien realmente soy.", s:{alignment:3}}
+    ]
+  },
+  {
+    kicker:"Tu cuello de botella",
+    title:"¿Qué sientes que más te está frenando en este momento?",
+    options:[
+      {t:"Confusión: tengo muchas ideas, pero no una dirección clara.", s:{clarity:3}},
+      {t:"Miedo, perfeccionismo, procrastinación o necesidad de aprobación.", s:{action:3}},
+      {t:"No sé estructurar mi mensaje, mi oferta o cómo monetizar lo que sé.", s:{influence:3}},
+      {t:"Estoy funcionando por inercia: hago muchas cosas, pero no siento conexión profunda con ellas.", s:{alignment:3}}
+    ]
+  },
+  {
+    kicker:"Profundidad del problema",
+    title:"¿Hace cuánto sientes que esta situación se repite?",
+    options:[
+      {t:"Menos de 3 meses.", s:{clarity:1,action:1,influence:1,alignment:1}},
+      {t:"Entre 3 y 12 meses.", s:{clarity:1,action:1,influence:1,alignment:1}},
+      {t:"Entre 1 y 3 años.", s:{clarity:1,action:1,influence:1,alignment:1}},
+      {t:"Más de 3 años. Ya no quiero seguir aplazándolo.", s:{clarity:2,action:2,influence:2,alignment:2}}
+    ]
+  },
+  {
+    kicker:"Tu patrón de avance",
+    title:"Cuando intentas avanzar, ¿qué suele suceder?",
+    options:[
+      {t:"Pienso demasiado y termino confundido(a) entre varias posibilidades.", s:{clarity:2}},
+      {t:"Sé qué hacer, pero espero sentirme listo(a), seguro(a) o tener la aprobación correcta.", s:{action:3}},
+      {t:"Empiezo cosas, pero me cuesta darles estructura, enfoque y continuidad comercial.", s:{influence:3}},
+      {t:"Avanzo y cumplo, pero sigo sintiendo que estoy construyendo una vida que no me representa del todo.", s:{alignment:3}}
+    ]
+  },
+  {
+    kicker:"Tu nivel de influencia",
+    title:"¿En qué punto estás hoy respecto a ayudar a otras personas con lo que sabes o has vivido?",
+    options:[
+      {t:"Todavía no sé con claridad qué podría aportar.", s:{clarity:2}},
+      {t:"Sé que podría ayudar, pero aún no me atrevo a ponerme al frente.", s:{action:2}},
+      {t:"La gente ya me busca o ayudo de manera informal, pero no tengo una oferta estructurada.", s:{influence:3}},
+      {t:"Ya tengo servicios, proyecto o audiencia, pero quiero que todo tenga más propósito, profundidad y dirección.", s:{alignment:2,influence:1}}
+    ]
+  },
+  {
+    kicker:"Tu disposición actual",
+    title:"¿Qué tan prioritario es para ti resolver esto ahora?",
+    options:[
+      {t:"Es una prioridad. Estoy dispuesto(a) a tomar decisiones y aplicar acompañamiento.", s:{action:2,influence:1,clarity:1,alignment:1}},
+      {t:"Quiero resolverlo, pero primero necesito entender con claridad qué debo trabajar.", s:{clarity:2}},
+      {t:"Sé que necesito moverme, pero todavía siento resistencia o miedo.", s:{action:2}},
+      {t:"Estoy explorando. Quiero entender mejor mi situación antes de decidir mi siguiente paso.", s:{alignment:1,clarity:1}}
+    ]
+  }
+];
+
+const profiles = {
+  clarity:{
+    title:"Tu principal cuello de botella es la CLARIDAD DE DISEÑO",
+    teaser:"No te falta capacidad. Lo que hoy te está costando es convertir todo lo que eres, sabes y has vivido en una dirección concreta.",
+    intro:"Tu energía se está dispersando porque todavía no existe una definición suficientemente clara de quién eres, a quién estás llamado(a) a servir y qué problema específico podrías ayudar a resolver.",
+    roadmap:[
+      ["1. Identidad antes que estrategia","Haz inventario de experiencias, talentos, temas recurrentes, heridas transformadas y problemas que naturalmente sabes ayudar a resolver."],
+      ["2. Define una hipótesis de propósito","No necesitas descubrir una frase perfecta. Necesitas una dirección comprobable: persona + problema + transformación que podrías facilitar."],
+      ["3. Valida con acción","Conversa, sirve, prueba una sesión o pequeño proceso. La claridad profunda suele aparecer mientras avanzas, no mientras sigues pensando."]
+    ]
+  },
+  action:{
+    title:"Tu principal cuello de botella es la ACTIVACIÓN",
+    teaser:"Probablemente ya sabes más de lo que estás ejecutando. El problema no es falta de información: es la distancia entre lo que sabes y las decisiones que estás tomando.",
+    intro:"Tu siguiente nivel no depende únicamente de más claridad. Depende de trabajar los patrones que te hacen posponer, perfeccionar, buscar aprobación o esperar sentirte completamente listo(a).",
+    roadmap:[
+      ["1. Identifica la decisión evitada","Escribe cuál es la decisión concreta que ya sabes que debes tomar y qué costo tiene seguir aplazándola."],
+      ["2. Rompe el patrón de protección","Observa qué estás intentando evitar: rechazo, fracaso, exposición, equivocarte o decepcionar a alguien. Nombrarlo reduce su poder."],
+      ["3. Crea una acción irreversible pequeña","Agenda, publica, invita, ofrece, conversa o entrega. Haz algo que convierta intención en movimiento real esta semana."]
+    ]
+  },
+  influence:{
+    title:"Tu principal cuello de botella es la EXPANSIÓN DE INFLUENCIA",
+    teaser:"Tienes conocimiento, experiencia o una transformación valiosa; ahora necesitas convertirla en una propuesta clara, estructurada y fácil de comunicar.",
+    intro:"Tu reto no es empezar desde cero. Es ordenar lo que ya tienes para que una persona pueda entender qué haces, para quién lo haces y qué resultado puede esperar.",
+    roadmap:[
+      ["1. Elige un problema principal","Deja de intentar comunicar todo lo que sabes. Define un problema urgente y concreto que puedas ayudar a resolver."],
+      ["2. Empaqueta una transformación","Convierte tu experiencia en un proceso: punto A, punto B, etapas, duración, metodología y acompañamiento."],
+      ["3. Vende desde diagnóstico","En lugar de explicar tu oferta primero, aprende a diagnosticar. Cuando el prospecto comprende su problema, tu propuesta deja de sentirse genérica."]
+    ]
+  },
+  alignment:{
+    title:"Tu principal cuello de botella es la ALINEACIÓN",
+    teaser:"El problema no parece ser falta de logros. Es que una parte de tu vida externa ya no refleja por completo lo que internamente sabes que estás llamado(a) a construir.",
+    intro:"Has aprendido a funcionar, cumplir y avanzar. Pero tu siguiente etapa requiere revisar qué estás sosteniendo por costumbre, expectativas o identidad pasada, y qué necesita ser rediseñado.",
+    roadmap:[
+      ["1. Separa éxito de diseño","Haz dos listas: lo que hoy se ve bien por fuera y lo que genuinamente tiene sentido para ti por dentro."],
+      ["2. Detecta lo que ya cumplió su ciclo","Identifica compromisos, roles o metas que siguen ocupando energía aunque ya no representen tu siguiente etapa."],
+      ["3. Rediseña desde adentro hacia afuera","Define qué tendría que cambiar en agenda, relaciones, trabajo, mensaje o proyecto para que tu vida vuelva a sentirse coherente con tu propósito."]
+    ]
+  }
+};
+
+let qIndex = 0;
+let scores = {clarity:0,action:0,influence:0,alignment:0};
+let answers = [];
+let winner = null;
+
+function show(id){
+  ["landing","quiz","analyzing","capture","result"].forEach(x=>document.getElementById(x).classList.add("hidden"));
+  document.getElementById(id).classList.remove("hidden");
+  window.scrollTo({top:0,behavior:"smooth"});
+}
+function startQuiz(){ show("quiz"); renderQuestion(); }
+function renderQuestion(){
+  const q = questions[qIndex];
+  document.getElementById("questionKicker").textContent = q.kicker;
+  document.getElementById("questionTitle").textContent = q.title;
+  document.getElementById("progressText").textContent = `Pregunta ${qIndex+1} de ${questions.length}`;
+  const pct = Math.round(((qIndex+1)/questions.length)*100);
+  document.getElementById("progressPct").textContent = pct+"%";
+  document.getElementById("progressBar").style.width = pct+"%";
+  const box = document.getElementById("options");
+  box.innerHTML = "";
+  q.options.forEach((o,i)=>{
+    const b=document.createElement("button");
+    b.className="option";
+    b.textContent=o.t;
+    b.onclick=()=>chooseOption(i,o);
+    box.appendChild(b);
+  });
+}
+function chooseOption(i,o){
+  answers.push({question:qIndex+1, answer:o.t});
+  Object.entries(o.s).forEach(([k,v])=>scores[k]+=v);
+  qIndex++;
+  if(qIndex<questions.length) renderQuestion();
+  else finishQuiz();
+}
+function finishQuiz(){
+  show("analyzing");
+  winner = Object.keys(scores).sort((a,b)=>scores[b]-scores[a])[0];
+  setTimeout(()=>{
+    const p=profiles[winner];
+    document.getElementById("teaserTitle").textContent=p.title;
+    document.getElementById("teaserText").textContent=p.teaser;
+    show("capture");
+  },1500);
+}
+document.getElementById("leadForm").addEventListener("submit", async (e)=>{
+  e.preventDefault();
+  const lead={
+    name:document.getElementById("name").value.trim(),
+    email:document.getElementById("email").value.trim(),
+    whatsapp:document.getElementById("whatsapp").value.trim(),
+    instagram:document.getElementById("instagram").value.trim(),
+    mc_id:MANYCHAT_CONTACT_ID,
+    segment:winner,
+    scores,
+    answers,
+    created_at:new Date().toISOString()
+  };
+  localStorage.setItem("mas_influencia_quiz_lead", JSON.stringify(lead));
+  try{
+    const response = await fetch("/api/lead",{
+      method:"POST",
+      headers:{"Content-Type":"application/json"},
+      body:JSON.stringify(lead)
+    });
+    if(!response.ok){
+      const detail = await response.text();
+      console.warn("No se pudo guardar el lead en Notion:", detail);
+    }
+  }catch(err){
+    console.warn("No se pudo conectar con Notion:", err);
+  }
+  renderResult();
+  show("result");
+});
+function renderResult(){
+  const p=profiles[winner];
+  document.getElementById("resultTitle").textContent=p.title;
+  document.getElementById("resultIntro").textContent=p.intro;
+  document.getElementById("roadmap").innerHTML=p.roadmap.map(([a,b])=>`<div class="step"><strong>${a}</strong><span>${b}</span></div>`).join("");
+  const labels={clarity:"Claridad",action:"Activación",influence:"Influencia",alignment:"Alineación"};
+  const max=Math.max(...Object.values(scores),1);
+  document.getElementById("scoreBars").innerHTML=Object.entries(scores).map(([k,v])=>{
+    const pct=Math.round((v/max)*100);
+    return `<div class="score-row"><div class="score-label"><span>${labels[k]}</span><span>${v}</span></div><div class="score-track"><div class="score-fill" style="width:${pct}%"></div></div></div>`
+  }).join("");
+  document.getElementById("ctaButton").href=DESTINATION_URL;
+}
+function restartQuiz(){
+  qIndex=0;scores={clarity:0,action:0,influence:0,alignment:0};answers=[];winner=null;
+  show("landing");
+}
+</script>
+</body>
+</html>
