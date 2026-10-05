@@ -183,34 +183,42 @@ const DESTINATION_URL = "https://calendly.com/masinfluencia-info/mentoria-de-cla
 // ManyChat puede enviarlo como ?mc_id=... o dentro de ?mcp_token=...
 const urlParams = new URLSearchParams(window.location.search);
 
-function getManychatContactId() {
-  const directId = urlParams.get("mc_id");
-  if (directId) return directId;
-
+function getManychatContext() {
+  const directId = urlParams.get("mc_id") || "";
   const mcpToken = urlParams.get("mcp_token");
+  let pid = "";
+
   if (mcpToken) {
     try {
       const payloadPart = mcpToken.split(".")[0];
       const normalized = payloadPart.replace(/-/g, "+").replace(/_/g, "/");
       const padded = normalized + "=".repeat((4 - normalized.length % 4) % 4);
       const payload = JSON.parse(atob(padded));
-      if (payload && payload.sid) return String(payload.sid);
+      if (payload && payload.pid) pid = String(payload.pid);
+      if (payload && payload.sid) {
+        return { contactId: directId || String(payload.sid), pid };
+      }
     } catch (err) {
       console.warn("No se pudo leer mcp_token de ManyChat:", err);
     }
   }
 
-  return "";
+  return { contactId: directId, pid };
 }
 
-const mcIdFromUrl = getManychatContactId();
+const manychatContext = getManychatContext();
 
-// Lo conservamos por si la persona recarga la página durante el quiz.
-if (mcIdFromUrl) {
-  localStorage.setItem("mas_influencia_mc_id", mcIdFromUrl);
+if (manychatContext.contactId) {
+  localStorage.setItem("mas_influencia_mc_id", manychatContext.contactId);
 }
+if (manychatContext.pid) {
+  localStorage.setItem("mas_influencia_mc_pid", manychatContext.pid);
+}
+
 const MANYCHAT_CONTACT_ID =
-  mcIdFromUrl || localStorage.getItem("mas_influencia_mc_id") || "";
+  manychatContext.contactId || localStorage.getItem("mas_influencia_mc_id") || "";
+const MANYCHAT_PAGE_ID =
+  manychatContext.pid || localStorage.getItem("mas_influencia_mc_pid") || "";
 
 const questions = [
   {
@@ -374,14 +382,23 @@ function finishQuiz(){
     show("capture");
   },1500);
 }
+let leadSubmitInProgress = false;
+
 document.getElementById("leadForm").addEventListener("submit", async (e)=>{
   e.preventDefault();
+  if (leadSubmitInProgress) return;
+  leadSubmitInProgress = true;
+
+  const submitButton = e.currentTarget.querySelector('button[type="submit"]');
+  if (submitButton) submitButton.disabled = true;
+
   const lead={
     name:document.getElementById("name").value.trim(),
     email:document.getElementById("email").value.trim(),
     whatsapp:document.getElementById("whatsapp").value.trim(),
     instagram:document.getElementById("instagram").value.trim(),
     mc_id:MANYCHAT_CONTACT_ID,
+    mc_pid:MANYCHAT_PAGE_ID,
     segment:winner,
     scores,
     answers,
