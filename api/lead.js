@@ -59,34 +59,53 @@ function instagramUrl(value) {
   return user ? `https://instagram.com/${user}` : null;
 }
 
+function sleep(ms) {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+
 async function manychatPost(path, apiKey, body) {
-  const response = await fetch(`https://api.manychat.com${path}`, {
-    method: "POST",
-    headers: {
-      "Authorization": `Bearer ${apiKey}`,
-      "Content-Type": "application/json"
-    },
-    body: JSON.stringify(body)
-  });
+  let lastError = null;
 
-  const text = await response.text();
-  let data = null;
-  try {
-    data = text ? JSON.parse(text) : {};
-  } catch {
-    data = { raw: text };
-  }
+  for (let attempt = 0; attempt < 3; attempt++) {
+    const response = await fetch(`https://api.manychat.com${path}`, {
+      method: "POST",
+      headers: {
+        "Authorization": `Bearer ${apiKey}`,
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify(body)
+    });
 
-  if (!response.ok) {
+    const text = await response.text();
+    let data = null;
+    try {
+      data = text ? JSON.parse(text) : {};
+    } catch {
+      data = { raw: text };
+    }
+
+    if (response.ok) return data;
+
     const message =
       data?.message ||
       data?.error ||
       data?.detail ||
       `ManyChat respondió ${response.status}`;
-    throw new Error(message);
+
+    lastError = new Error(message);
+
+    const rateLimited =
+      response.status === 429 ||
+      /max rps|rate limit/i.test(String(message));
+
+    if (!rateLimited || attempt === 2) {
+      throw lastError;
+    }
+
+    await sleep(700 * (attempt + 1));
   }
 
-  return data;
+  throw lastError || new Error("ManyChat request failed");
 }
 
 async function setManychatField(apiKey, subscriberId, fieldName, fieldValue) {
@@ -99,10 +118,18 @@ async function setManychatField(apiKey, subscriberId, fieldName, fieldValue) {
 
 async function syncQuizToManychat(lead, scoresText) {
   const subscriberId = String(lead.mc_id || "").trim();
-  const apiKeys = [
-    { account: "sara", key: (process.env.MANYCHAT_API_KEY || "").trim() },
-    { account: "juan", key: (process.env.MANYCHAT_API_KEY_JUAN || "").trim() }
+  const pid = String(lead.mc_pid || "").trim();
+  const allKeys = [
+    { account: "sara", pid: "3909136", key: (process.env.MANYCHAT_API_KEY || "").trim() },
+    { account: "juan", pid: "3908852", key: (process.env.MANYCHAT_API_KEY_JUAN || "").trim() }
   ].filter(item => item.key);
+
+  const apiKeys = pid
+    ? [
+        ...allKeys.filter(item => item.pid === pid),
+        ...allKeys.filter(item => item.pid !== pid)
+      ]
+    : allKeys;
 
   // El quiz también puede abrirse fuera de ManyChat.
   // En ese caso seguimos guardando el lead en Notion, pero no intentamos sincronizarlo.
