@@ -40,6 +40,51 @@ const QUIZ_RESULT_MAP = {
   }
 };
 
+
+// Adaptación operativa del Guion Maestro de Setting: ruta corta para quien hizo el TEST.
+// Borrador para revisión humana; no se envía al prospecto automáticamente.
+const QUIZ_MESSAGE_TEMPLATES = {
+  "clarity": {
+    "reflection": "Tus respuestas apuntan a que necesitas ordenar tus ideas y encontrar una dirección más clara.",
+    "question": "¿En qué parte de tu vida estás sintiendo más esa falta de dirección?"
+  },
+  "action": {
+    "reflection": "Tus respuestas apuntan a que te está costando llevar a la práctica lo que quieres hacer.",
+    "question": "¿En qué situación de tu día a día estás notando más esa dificultad para avanzar?"
+  },
+  "influence": {
+    "reflection": "En tu resultado aparece la necesidad de dar estructura a lo que sabes para convertirlo en una propuesta clara.",
+    "question": "¿Qué te gustaría ayudar a otras personas a lograr con tu experiencia?"
+  },
+  "alignment": {
+    "reflection": "Tus respuestas apuntan a que quieres que lo que haces esté más conectado con lo que tiene sentido para ti.",
+    "question": "¿En qué parte de tu vida sientes más distancia entre lo que haces y lo que realmente quieres vivir?"
+  }
+};
+
+function buildQuizMessage(lead) {
+  const rawName = typeof lead.name === "string" ? lead.name.trim().replace(/\s+/g, " ").slice(0, 120) : "";
+  const greeting = rawName ? `Hola, ${rawName}.` : "Hola.";
+  const template = QUIZ_MESSAGE_TEMPLATES[lead.segment];
+  if (!template) return `${greeting} Gracias por completar el diagnóstico. ¿Qué parte de tu resultado refleja mejor lo que estás viviendo hoy?`;
+  return `${greeting} Gracias por completar el diagnóstico. ${template.reflection}\n\n${template.question}`;
+}
+
+function quizMessageBlocks(message) {
+  return [
+    { object: "block", type: "heading_2", heading_2: {
+      rich_text: [{ type: "text", text: { content: "📋 Mensaje para copiar · resultado del quiz" } }]
+    } },
+    { object: "block", type: "paragraph", paragraph: {
+      rich_text: [{ type: "text", text: { content: "Borrador para revisar antes de enviar. Copia únicamente el texto del recuadro. Si ya conversaron sobre este punto o la persona ya agendó, continúa desde lo que ya sabes; no reinicies el cuestionario." } }]
+    } },
+    { object: "block", type: "code", code: {
+      language: "plain text",
+      rich_text: [{ type: "text", text: { content: message } }]
+    } }
+  ];
+}
+
 function richText(content) {
   const safe = String(content || "").slice(0, 1900);
   return { rich_text: safe ? [{ type: "text", text: { content: safe } }] : [] };
@@ -237,8 +282,10 @@ export default async function handler(req, res) {
       ? `Claridad: ${lead.scores.clarity || 0} | Activación: ${lead.scores.action || 0} | Influencia: ${lead.scores.influence || 0} | Alineación: ${lead.scores.alignment || 0}`
       : "";
 
+    const suggestedMessage = buildQuizMessage(lead);
     const properties = {
       "Nombre": title(lead.name || "Lead Quiz"),
+      "📋 Mensaje copiable": richText(suggestedMessage),
       "Email": { email: lead.email || null },
       "Teléfono": { phone_number: lead.whatsapp || null },
       "Fuente": { select: { name: "Quiz Funnel" } },
@@ -266,7 +313,8 @@ export default async function handler(req, res) {
           type: "data_source_id",
           data_source_id: dataSourceId
         },
-        properties
+        properties,
+        children: quizMessageBlocks(suggestedMessage)
       })
     });
 
