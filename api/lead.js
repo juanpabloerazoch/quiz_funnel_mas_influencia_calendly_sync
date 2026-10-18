@@ -134,14 +134,11 @@ function buildQuizMessages(lead) {
   // El test recoge situación y duración, pero NO pregunta por intentos previos.
   // Avanzar al paso 5 del Guion Maestro cuando se conoce el tiempo; si falta, paso 4.
   const question = durationKnown
-    ? `¿Qué has hecho durante ${time} para ${goal}?`
+    ? `¿Qué has hecho durante ${time} que mencionaste en el test para ${goal}?`
     : "¿Hace cuánto tiempo vienes viviendo esta situación?";
-  const sara = durationKnown
-    ? `${prefix}estuve mirando tus respuestas del test y veo que ${problem}. También vi que llevas ${time} en esta situación.\n\nMe gustaría conocerte un poquito más. Cuéntame, ${question.charAt(0).toLowerCase() + question.slice(1)}`
-    : `${prefix}estuve mirando tus respuestas del test y veo que ${problem}.\n\nMe gustaría conocerte un poquito más. Cuéntame, ${question.charAt(0).toLowerCase() + question.slice(1)}`;
-  const juan = durationKnown
-    ? `${prefix}estuve revisando tus respuestas del test y veo que ${problem}.\n\nTambién vi que llevas ${time} así. Cuéntame, ${question.charAt(0).toLowerCase() + question.slice(1)}`
-    : `${prefix}estuve revisando tus respuestas del test y veo que ${problem}.\n\nCuéntame, ${question.charAt(0).toLowerCase() + question.slice(1)}`;
+  // La duración aparece solo en la pregunta, sin repetirla en el párrafo anterior.
+  const sara = `${prefix}estuve mirando tus respuestas del test y veo que ${problem}.\n\nCuéntame, ${question.charAt(0).toLowerCase() + question.slice(1)}`;
+  const juan = `${prefix}estuve revisando tus respuestas del test y veo que ${problem}.\n\nCuéntame, ${question.charAt(0).toLowerCase() + question.slice(1)}`;
   return { sara, juan };
 }
 function quizCopyUrl(lead) {
