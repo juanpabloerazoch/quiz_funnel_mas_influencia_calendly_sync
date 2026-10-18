@@ -118,15 +118,15 @@ function buildQuizMessages(lead) {
     influence: "quieres dar forma a tu experiencia para ayudar a otras personas",
     alignment: "quieres alinear lo que haces con la vida que deseas construir"
   };
-  const problem = situation >= 0 ? descriptions[situation] :
+  const problem = situation === 1 ? "sabes lo que quieres hacer, pero todavía hay algo que te está frenando para pasar a la acción" : situation >= 0 ? descriptions[situation] :
     blocker >= 0 ? blockers[blocker] :
     fallbackBySegment[lead.segment] || "hay algo importante que quieres trabajar en esta etapa";
-  const durations = ["menos de tres meses", "entre tres y doce meses", "entre uno y tres años", "más de tres años"];
+  const durations = ["menos de 3 meses", "3 a 12 meses", "1 a 3 años", "más de 3 años"];
   const durationKnown = duration >= 0 && duration < durations.length;
   const time = durationKnown ? durations[duration] : "";
   const actions = {
     clarity: "encontrar esa claridad",
-    action: "pasar a la acción",
+    action: "lograr dar ese paso",
     influence: "darle forma a esa propuesta",
     alignment: "sentirte más alineado con lo que quieres vivir"
   };
@@ -134,7 +134,7 @@ function buildQuizMessages(lead) {
   // El test recoge situación y duración, pero NO pregunta por intentos previos.
   // Avanzar al paso 5 del Guion Maestro cuando se conoce el tiempo; si falta, paso 4.
   const question = durationKnown
-    ? `¿Qué has hecho durante ${time} que mencionaste en el test para ${goal}?`
+    ? `¿Qué has hecho durante estos ${time} que mencionaste en el test para ${goal}?`
     : "¿Hace cuánto tiempo vienes viviendo esta situación?";
   // La duración aparece solo en la pregunta, sin repetirla en el párrafo anterior.
   const sara = `${prefix}estuve mirando tus respuestas del test y veo que ${problem}.\n\nCuéntame, ${question.charAt(0).toLowerCase() + question.slice(1)}`;
