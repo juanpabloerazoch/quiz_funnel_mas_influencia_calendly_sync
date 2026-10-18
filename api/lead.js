@@ -41,47 +41,114 @@ const QUIZ_RESULT_MAP = {
 };
 
 
-// Adaptación operativa del Guion Maestro de Setting: ruta corta para quien hizo el TEST.
-// Borrador para revisión humana; no se envía al prospecto automáticamente.
-const QUIZ_MESSAGE_TEMPLATES = {
+// Adaptaciones de la ruta TEST del Guion Maestro; voces revisadas por separado.
+// Solo borradores en Notion: este código no envía mensajes al prospecto.
+const QUIZ_VOICE_TEMPLATES = {
   "clarity": {
-    "reflection": "Tus respuestas apuntan a que necesitas ordenar tus ideas y encontrar una dirección más clara.",
-    "question": "¿En qué parte de tu vida estás sintiendo más esa falta de dirección?"
+    "sara": "Estuve mirando tu resultado y me gustaría conocerte un poquito más. Parece que hoy lo que más necesitas es encontrar una dirección que tenga sentido para ti.\n\nCuéntame, ¿en qué parte de tu vida estás sintiendo más esa falta de claridad?",
+    "juan": "Revisé tu resultado. El punto que más aparece es la claridad sobre tu propósito y hacia dónde enfocar tus próximos pasos.\n\n¿En qué parte de tu vida te está afectando más no tener esa dirección clara?"
   },
   "action": {
-    "reflection": "Tus respuestas apuntan a que te está costando llevar a la práctica lo que quieres hacer.",
-    "question": "¿En qué situación de tu día a día estás notando más esa dificultad para avanzar?"
+    "sara": "Estuve mirando tu resultado y parece que hay algo que quieres hacer, pero te está costando dar el paso.\n\nCuéntame, ¿qué es eso que hoy quieres poner en marcha y todavía se te está quedando pendiente?",
+    "juan": "Revisé tu resultado. Lo que más aparece es la dificultad para pasar de la intención a la acción.\n\n¿Cuál es el paso concreto que quieres dar y hoy se te está dificultando?"
   },
   "influence": {
-    "reflection": "En tu resultado aparece la necesidad de dar estructura a lo que sabes para convertirlo en una propuesta clara.",
-    "question": "¿Qué te gustaría ayudar a otras personas a lograr con tu experiencia?"
+    "sara": "Estuve mirando tu resultado y parece que quieres darle forma a lo que sabes para ayudar a otras personas.\n\nCuéntame, ¿qué te gustaría que alguien pudiera transformar en su vida con tu ayuda?",
+    "juan": "Revisé tu resultado. El siguiente punto por ordenar parece ser cómo convertir lo que sabes en una propuesta concreta.\n\n¿Qué problema te gustaría ayudar a resolver con tu experiencia?"
   },
   "alignment": {
-    "reflection": "Tus respuestas apuntan a que quieres que lo que haces esté más conectado con lo que tiene sentido para ti.",
-    "question": "¿En qué parte de tu vida sientes más distancia entre lo que haces y lo que realmente quieres vivir?"
+    "sara": "Estuve mirando tu resultado y parece que el reto no es simplemente hacer más, sino sentir que lo que haces de verdad te representa.\n\n¿En qué parte de tu vida sientes que estás cumpliendo, pero no viviendo algo que tenga sentido para ti?",
+    "juan": "Revisé tu resultado. Parece que necesitas alinear mejor lo que estás construyendo con la vida que quieres vivir.\n\n¿Qué parte de lo que haces hoy sientes más desconectada de ese propósito?"
   }
 };
-
-function buildQuizMessage(lead) {
+const QUIZ_CONTEXT_OPTIONS = [
+  [
+    "Siento que fui creado(a) para más, pero todavía no tengo claridad de para qué.",
+    "Sé bastante bien lo que quiero hacer, pero sigo postergando, dudando o frenándome.",
+    "Tengo experiencia, conocimiento o un proyecto, pero no sé cómo convertirlo en una propuesta clara que genere impacto e ingresos.",
+    "He logrado cosas importantes, pero por dentro siento que algo no está alineado o que falta sentido."
+  ],
+  [
+    "Confusión: tengo muchas ideas, pero no una dirección clara.",
+    "Miedo, perfeccionismo, procrastinación o necesidad de aprobación.",
+    "No sé estructurar mi mensaje, mi oferta o cómo monetizar lo que sé.",
+    "Estoy funcionando por inercia: hago muchas cosas, pero no siento conexión profunda con ellas."
+  ],
+  [
+    "Menos de 3 meses.",
+    "Entre 3 y 12 meses.",
+    "Entre 1 y 3 años.",
+    "Más de 3 años. Ya no quiero seguir aplazándolo."
+  ],
+  [
+    "Todavía no sé con claridad qué podría aportar.",
+    "Sé que podría ayudar, pero aún no me atrevo a ponerme al frente.",
+    "La gente ya me busca o ayudo de manera informal, pero no tengo una oferta estructurada.",
+    "Ya tengo servicios, proyecto o audiencia, pero quiero que todo tenga más propósito, profundidad y dirección."
+  ]
+];
+function quizContext(lead){
+  if(Array.isArray(lead.context) && lead.context.length===4 && lead.context.every(x=>Number.isInteger(x)&&x>=-1&&x<=3))return lead.context;
+  const answers=Array.isArray(lead.answers)?lead.answers:[];
+  const normalize=s=>String(s||"").trim().replace(/\s+/g," ").toLowerCase();
+  return [1,3,4,6].map((q,i)=>{
+    const answer=answers.find(a=>Number(a.question)===q);
+    return answer?QUIZ_CONTEXT_OPTIONS[i].findIndex(t=>normalize(t)===normalize(answer.answer)):-1;
+  });
+}
+function buildQuizMessages(lead) {
   const rawName = typeof lead.name === "string" ? lead.name.trim().replace(/\s+/g, " ").slice(0, 120) : "";
   const greeting = rawName ? `Hola, ${rawName}.` : "Hola.";
-  const template = QUIZ_MESSAGE_TEMPLATES[lead.segment];
-  if (!template) return `${greeting} Gracias por completar el diagnóstico. ¿Qué parte de tu resultado refleja mejor lo que estás viviendo hoy?`;
-  return `${greeting} Gracias por completar el diagnóstico. ${template.reflection}\n\n${template.question}`;
+  const template = QUIZ_VOICE_TEMPLATES[lead.segment];
+  if (!template) return {
+    sara: `${greeting} Estuve mirando tu diagnóstico y me gustaría conocerte un poquito más. ¿Qué parte de tu resultado refleja mejor lo que estás viviendo hoy?`,
+    juan: `${greeting} Revisé tu diagnóstico. ¿Qué parte del resultado describe mejor lo que necesitas trabajar hoy?`
+  };
+  const [situation,blocker,duration,stage]=quizContext(lead);
+  if(situation<0 && blocker<0)return {sara:`${greeting} ${template.sara}`,juan:`${greeting} ${template.juan}`};
+  const situations=[
+    "sientes que hay algo más para ti, pero todavía te falta claridad sobre la dirección que quieres tomar",
+    "sabes lo que quieres hacer, pero las dudas o la postergación te están frenando",
+    "tienes experiencia o conocimiento que quieres convertir en una propuesta clara",
+    "has logrado cosas importantes, pero sientes que algo no está alineado o le falta sentido"
+  ];
+  const blockers=[
+    "tienes varias ideas y te está costando encontrar una dirección clara",
+    "te identificaste con el miedo, el perfeccionismo o la necesidad de aprobación como posibles frenos",
+    "te está costando estructurar tu mensaje o lo que quieres ofrecer",
+    "haces muchas cosas, pero no sientes una conexión real con ellas"
+  ];
+  const durations=["menos de tres meses","entre tres y doce meses","entre uno y tres años","más de tres años"];
+  const main=situation>=0?situations[situation]:blockers[blocker];
+  const extra=blocker>=0 && blocker!==situation ? ` También señalaste que ${blockers[blocker]}.` : "";
+  const time=duration>=0?` Esto lleva ${durations[duration]}.`:"";
+  const questions={
+    clarity:situation===1?"¿En qué parte de tu vida te está afectando más esta situación?":"¿En qué parte de tu vida estás sintiendo más esa falta de dirección?",
+    action:"¿Cuál es el paso concreto que hoy te cuesta poner en marcha?",
+    influence:stage===2?"¿Qué suelen pedirte las personas que ya te buscan?":stage===3?"¿A quién estás ayudando hoy con lo que haces?":"¿A quién te gustaría ayudar con lo que sabes?",
+    alignment:"¿En qué parte de tu vida sientes que estás cumpliendo, pero no viviendo algo que de verdad te representa?"
+  };
+  return {
+    sara:`${greeting} Estuve mirando tu resultado y me gustaría escucharte un poquito más. Me cuentas que ${main}.${extra}${time}\n\nCuéntame, ${questions[lead.segment].replace(/^¿(.)/,(_,letter)=>"¿"+letter.toLowerCase())}`,
+    juan:`${greeting} Revisé tu resultado: ${main}.${extra}${time}\n\n${questions[lead.segment]}`
+  };
 }
-
-function quizMessageBlocks(message) {
+function quizCopyUrl(lead) {
+  const name=typeof lead.name==="string"?lead.name.trim().replace(/\s+/g," ").slice(0,120):"";
+  const segment=Object.prototype.hasOwnProperty.call(QUIZ_VOICE_TEMPLATES,lead.segment)?lead.segment:"clarity";
+  const params=new URLSearchParams({datos:JSON.stringify({v:2,n:name,s:segment,c:quizContext(lead)})});
+  return "https://quizfunnelmasinfluenciacalendlysync.vercel.app/copiar#"+params.toString();
+}
+function quizMessageBlocks(messages,copyUrl) {
+  const text=content=>[{type:"text",text:{content}}];
   return [
-    { object: "block", type: "heading_2", heading_2: {
-      rich_text: [{ type: "text", text: { content: "📋 Mensaje para copiar · resultado del quiz" } }]
-    } },
-    { object: "block", type: "paragraph", paragraph: {
-      rich_text: [{ type: "text", text: { content: "Borrador para revisar antes de enviar. Copia únicamente el texto del recuadro. Si ya conversaron sobre este punto o la persona ya agendó, continúa desde lo que ya sabes; no reinicies el cuestionario." } }]
-    } },
-    { object: "block", type: "code", code: {
-      language: "plain text",
-      rich_text: [{ type: "text", text: { content: message } }]
-    } }
+    {object:"block",type:"heading_2",heading_2:{rich_text:text("📋 Mensajes para copiar · Sara y Juan")}},
+    {object:"block",type:"paragraph",paragraph:{rich_text:[{type:"text",text:{content:"📋 ABRIR BOTONES PARA COPIAR SARA / JUAN",link:{url:copyUrl}},annotations:{bold:true}}]}},
+    {object:"block",type:"paragraph",paragraph:{rich_text:text("Abre el enlace y pulsa Copiar mensaje de Sara o Copiar mensaje de Juan. Cada botón copia el mensaje completo. Borradores para revisar: si este punto ya se conversó o la persona ya agendó, continúa desde lo que ya sabes.")}},
+    {object:"block",type:"heading_3",heading_3:{rich_text:text("Voz Sara")}},
+    {object:"block",type:"paragraph",paragraph:{rich_text:text(messages.sara)}},
+    {object:"block",type:"heading_3",heading_3:{rich_text:text("Voz Juan")}},
+    {object:"block",type:"paragraph",paragraph:{rich_text:text(messages.juan)}}
   ];
 }
 
@@ -282,10 +349,11 @@ export default async function handler(req, res) {
       ? `Claridad: ${lead.scores.clarity || 0} | Activación: ${lead.scores.action || 0} | Influencia: ${lead.scores.influence || 0} | Alineación: ${lead.scores.alignment || 0}`
       : "";
 
-    const suggestedMessage = buildQuizMessage(lead);
+    const voiceMessages = buildQuizMessages(lead);
+    const copyUrl = quizCopyUrl(lead);
     const properties = {
       "Nombre": title(lead.name || "Lead Quiz"),
-      "📋 Mensaje copiable": richText(suggestedMessage),
+      "📋 Mensaje copiable": richText(`VOZ SARA\n${voiceMessages.sara}\n\nVOZ JUAN\n${voiceMessages.juan}`),
       "Email": { email: lead.email || null },
       "Teléfono": { phone_number: lead.whatsapp || null },
       "Fuente": { select: { name: "Quiz Funnel" } },
@@ -314,7 +382,7 @@ export default async function handler(req, res) {
           data_source_id: dataSourceId
         },
         properties,
-        children: quizMessageBlocks(suggestedMessage)
+        children: quizMessageBlocks(voiceMessages, copyUrl)
       })
     });
 
