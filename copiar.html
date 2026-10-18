@@ -1,0 +1,155 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<meta name="referrer" content="no-referrer">
+<title>Copiar mensajes · +Influencia</title>
+<style>
+:root{color-scheme:dark;--gold:#ecd8a5;--ink:#f5f1e8;--muted:#c1baad}
+*{box-sizing:border-box}body{margin:0;background:#101010;color:var(--ink);font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
+main{max-width:740px;margin:auto;padding:28px 18px 48px}.brand{font-size:12px;letter-spacing:.14em;color:var(--gold);font-weight:800}h1{font-size:clamp(28px,6vw,38px);line-height:1.15;margin:14px 0}p{font-size:16px;line-height:1.55;color:var(--muted)}
+.card{border:1px solid #39352c;border-radius:20px;padding:22px;margin-top:22px;background:#191919}h2{margin:0 0 5px;font-size:24px}.voice{margin:0 0 16px;font-size:14px}
+textarea{display:block;width:100%;min-height:220px;resize:vertical;border:1px solid #494133;border-radius:12px;padding:15px;background:#111;color:var(--ink);font:400 17px/1.6 system-ui;overflow-wrap:anywhere;white-space:pre-wrap}
+button{width:100%;padding:17px;margin-top:16px;border:0;border-radius:12px;background:var(--gold);color:#1b160d;font-size:17px;font-weight:750;cursor:pointer;touch-action:manipulation}
+button:focus-visible,textarea:focus-visible{outline:3px solid #fff;outline-offset:4px}.status{min-height:26px;margin:12px 0 0;color:var(--gold);font-size:15px}.error{padding:20px;border:1px solid #a77;border-radius:16px}[hidden]{display:none!important}.note{font-size:13px;margin-top:24px}
+@media(max-width:420px){.card{padding:18px}textarea{min-height:270px}}
+</style>
+</head>
+<body><main>
+<div class="brand">+INFLUENCIA · SETTING</div>
+<h1 id="title">Mensajes listos para copiar</h1>
+<p>Elige la voz, revisa el mensaje y pulsa Copiar. Puedes ajustar el texto antes de copiarlo.</p>
+<div id="error" class="error" hidden>Este enlace está incompleto. Vuelve a la ficha del prospecto y abre el acceso a sus mensajes.</div>
+<div id="messages" hidden>
+<section class="card"><h2>Voz Sara</h2><p class="voice">Cálida y conversacional</p>
+<label for="sara" hidden>Mensaje de Sara</label><textarea id="sara" spellcheck="true"></textarea>
+<button type="button" id="copySara" onclick="copyVoice('sara')">Copiar mensaje de Sara</button><p class="status" id="statusSara" role="status" aria-live="polite"></p></section>
+<section class="card"><h2>Voz Juan</h2><p class="voice">Directa y enfocada</p>
+<label for="juan" hidden>Mensaje de Juan</label><textarea id="juan" spellcheck="true"></textarea>
+<button type="button" id="copyJuan" onclick="copyVoice('juan')">Copiar mensaje de Juan</button><p class="status" id="statusJuan" role="status" aria-live="polite"></p></section>
+<p class="note">Borradores para revisión humana. Si este punto ya se conversó o la persona ya agendó, continúa desde lo que ya sabes.</p>
+</div></main>
+<script>
+const QUIZ_VOICE_TEMPLATES = {
+  "clarity": {
+    "sara": "Estuve mirando tu resultado y me gustaría conocerte un poquito más. Parece que hoy lo que más necesitas es encontrar una dirección que tenga sentido para ti.\n\nCuéntame, ¿en qué parte de tu vida estás sintiendo más esa falta de claridad?",
+    "juan": "Revisé tu resultado. El punto que más aparece es la claridad sobre tu propósito y hacia dónde enfocar tus próximos pasos.\n\n¿En qué parte de tu vida te está afectando más no tener esa dirección clara?"
+  },
+  "action": {
+    "sara": "Estuve mirando tu resultado y parece que hay algo que quieres hacer, pero te está costando dar el paso.\n\nCuéntame, ¿qué es eso que hoy quieres poner en marcha y todavía se te está quedando pendiente?",
+    "juan": "Revisé tu resultado. Lo que más aparece es la dificultad para pasar de la intención a la acción.\n\n¿Cuál es el paso concreto que quieres dar y hoy se te está dificultando?"
+  },
+  "influence": {
+    "sara": "Estuve mirando tu resultado y parece que quieres darle forma a lo que sabes para ayudar a otras personas.\n\nCuéntame, ¿qué te gustaría que alguien pudiera transformar en su vida con tu ayuda?",
+    "juan": "Revisé tu resultado. El siguiente punto por ordenar parece ser cómo convertir lo que sabes en una propuesta concreta.\n\n¿Qué problema te gustaría ayudar a resolver con tu experiencia?"
+  },
+  "alignment": {
+    "sara": "Estuve mirando tu resultado y parece que el reto no es simplemente hacer más, sino sentir que lo que haces de verdad te representa.\n\n¿En qué parte de tu vida sientes que estás cumpliendo, pero no viviendo algo que tenga sentido para ti?",
+    "juan": "Revisé tu resultado. Parece que necesitas alinear mejor lo que estás construyendo con la vida que quieres vivir.\n\n¿Qué parte de lo que haces hoy sientes más desconectada de ese propósito?"
+  }
+};
+const QUIZ_CONTEXT_OPTIONS = [
+  [
+    "Siento que fui creado(a) para más, pero todavía no tengo claridad de para qué.",
+    "Sé bastante bien lo que quiero hacer, pero sigo postergando, dudando o frenándome.",
+    "Tengo experiencia, conocimiento o un proyecto, pero no sé cómo convertirlo en una propuesta clara que genere impacto e ingresos.",
+    "He logrado cosas importantes, pero por dentro siento que algo no está alineado o que falta sentido."
+  ],
+  [
+    "Confusión: tengo muchas ideas, pero no una dirección clara.",
+    "Miedo, perfeccionismo, procrastinación o necesidad de aprobación.",
+    "No sé estructurar mi mensaje, mi oferta o cómo monetizar lo que sé.",
+    "Estoy funcionando por inercia: hago muchas cosas, pero no siento conexión profunda con ellas."
+  ],
+  [
+    "Menos de 3 meses.",
+    "Entre 3 y 12 meses.",
+    "Entre 1 y 3 años.",
+    "Más de 3 años. Ya no quiero seguir aplazándolo."
+  ],
+  [
+    "Todavía no sé con claridad qué podría aportar.",
+    "Sé que podría ayudar, pero aún no me atrevo a ponerme al frente.",
+    "La gente ya me busca o ayudo de manera informal, pero no tengo una oferta estructurada.",
+    "Ya tengo servicios, proyecto o audiencia, pero quiero que todo tenga más propósito, profundidad y dirección."
+  ]
+];
+function quizContext(lead){
+  if(Array.isArray(lead.context) && lead.context.length===4 && lead.context.every(x=>Number.isInteger(x)&&x>=-1&&x<=3))return lead.context;
+  const answers=Array.isArray(lead.answers)?lead.answers:[];
+  const normalize=s=>String(s||"").trim().replace(/\s+/g," ").toLowerCase();
+  return [1,3,4,6].map((q,i)=>{
+    const answer=answers.find(a=>Number(a.question)===q);
+    return answer?QUIZ_CONTEXT_OPTIONS[i].findIndex(t=>normalize(t)===normalize(answer.answer)):-1;
+  });
+}
+function buildQuizMessages(lead) {
+  const rawName = typeof lead.name === "string" ? lead.name.trim().replace(/\s+/g, " ").slice(0, 120) : "";
+  const greeting = rawName ? `Hola, ${rawName}.` : "Hola.";
+  const template = QUIZ_VOICE_TEMPLATES[lead.segment];
+  if (!template) return {
+    sara: `${greeting} Estuve mirando tu diagnóstico y me gustaría conocerte un poquito más. ¿Qué parte de tu resultado refleja mejor lo que estás viviendo hoy?`,
+    juan: `${greeting} Revisé tu diagnóstico. ¿Qué parte del resultado describe mejor lo que necesitas trabajar hoy?`
+  };
+  const [situation,blocker,duration,stage]=quizContext(lead);
+  if(situation<0 && blocker<0)return {sara:`${greeting} ${template.sara}`,juan:`${greeting} ${template.juan}`};
+  const situations=[
+    "sientes que hay algo más para ti, pero todavía te falta claridad sobre la dirección que quieres tomar",
+    "sabes lo que quieres hacer, pero las dudas o la postergación te están frenando",
+    "tienes experiencia o conocimiento que quieres convertir en una propuesta clara",
+    "has logrado cosas importantes, pero sientes que algo no está alineado o le falta sentido"
+  ];
+  const blockers=[
+    "tienes varias ideas y te está costando encontrar una dirección clara",
+    "te identificaste con el miedo, el perfeccionismo o la necesidad de aprobación como posibles frenos",
+    "te está costando estructurar tu mensaje o lo que quieres ofrecer",
+    "haces muchas cosas, pero no sientes una conexión real con ellas"
+  ];
+  const durations=["menos de tres meses","entre tres y doce meses","entre uno y tres años","más de tres años"];
+  const main=situation>=0?situations[situation]:blockers[blocker];
+  const extra=blocker>=0 && blocker!==situation ? ` También señalaste que ${blockers[blocker]}.` : "";
+  const time=duration>=0?` Esto lleva ${durations[duration]}.`:"";
+  const questions={
+    clarity:situation===1?"¿En qué parte de tu vida te está afectando más esta situación?":"¿En qué parte de tu vida estás sintiendo más esa falta de dirección?",
+    action:"¿Cuál es el paso concreto que hoy te cuesta poner en marcha?",
+    influence:stage===2?"¿Qué suelen pedirte las personas que ya te buscan?":stage===3?"¿A quién estás ayudando hoy con lo que haces?":"¿A quién te gustaría ayudar con lo que sabes?",
+    alignment:"¿En qué parte de tu vida sientes que estás cumpliendo, pero no viviendo algo que de verdad te representa?"
+  };
+  return {
+    sara:`${greeting} Estuve mirando tu resultado y me gustaría escucharte un poquito más. Me cuentas que ${main}.${extra}${time}\n\nCuéntame, ${questions[lead.segment].replace(/^¿(.)/,(_,letter)=>"¿"+letter.toLowerCase())}`,
+    juan:`${greeting} Revisé tu resultado: ${main}.${extra}${time}\n\n${questions[lead.segment]}`
+  };
+}
+function loadMessages(){
+  try{
+    const raw=new URLSearchParams(location.hash.slice(1)).get("datos");
+    if(!raw || raw.length>2000)throw new Error("invalid");
+    const data=JSON.parse(raw);
+    if(![1,2].includes(data.v) || typeof data.n!=="string" || data.n.length>120 || !Object.prototype.hasOwnProperty.call(QUIZ_VOICE_TEMPLATES,data.s))throw new Error("invalid");
+    const messages=buildQuizMessages({name:data.n,segment:data.s,context:data.c});
+    document.getElementById("title").textContent=data.n ? "Mensajes para "+data.n : "Mensajes listos para copiar";
+    document.getElementById("sara").value=messages.sara;
+    document.getElementById("juan").value=messages.juan;
+    document.getElementById("messages").hidden=false;
+    return true;
+  }catch(err){document.getElementById("error").hidden=false;return false;}
+}
+async function copyVoice(voice){
+  if(voice!=="sara"&&voice!=="juan")return;
+  const field=document.getElementById(voice);
+  const suffix=voice==="sara"?"Sara":"Juan";
+  const status=document.getElementById("status"+suffix);
+  let copied=false;
+  try{
+    if(navigator.clipboard && window.isSecureContext){await navigator.clipboard.writeText(field.value);copied=true;}
+  }catch(err){}
+  if(!copied){
+    field.focus();field.select();field.setSelectionRange(0,field.value.length);
+    try{copied=document.execCommand("copy");}catch(err){}
+  }
+  status.textContent=copied?"Mensaje completo copiado. Ya puedes pegarlo en el chat.":"Tu navegador bloqueó la copia. Mantén presionado el texto seleccionado y elige Copiar.";
+}
+loadMessages();
+</script></body></html>
