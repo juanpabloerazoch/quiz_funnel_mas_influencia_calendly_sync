@@ -179,11 +179,13 @@ input:focus{border-color:var(--accent)}
         <button id="shareJuan" class="btn" type="button" onclick="shareToInstagram('juan')">Enviarle mis resultados a Juan</button>
         <a id="ctaButton" class="btn secondary" href="https://calendly.com/masinfluencia-info/mentoria-de-claridad-influencia-con-juan-y-sar-clone" target="_blank" rel="noopener">Agendar una llamada de diagnóstico</a>
       </div>
-      <div class="note">Al compartir, se copia un mensaje con el enlace a tus resultados. Pégalo en Instagram y envíalo. El enlace incluye tus respuestas, sin correo ni teléfono.</div>
+      <div class="note">Elige a Sara o Juan para ver tu mensaje. Cópialo y luego abre el chat para pegarlo y enviarlo. El enlace incluye tus respuestas, sin correo ni teléfono.</div>
       <div id="sharePanel" class="share-panel hidden">
         <p id="shareStatus" role="status" aria-live="polite"></p>
         <label for="shareMessage">Tu mensaje para enviar</label>
         <textarea id="shareMessage" readonly></textarea>
+        <button id="copyMessage" class="btn secondary" type="button" onclick="copyPreparedMessage()" style="margin-bottom:12px">Copiar mensaje</button>
+        <p class="note">Después de copiar, abre Instagram, pega el mensaje en el chat y envíalo.</p>
         <a id="openInstagram" class="btn" href="https://ig.me/m/saraarcilaz" rel="noopener">Abrir el chat de Instagram</a>
       </div>
     </div>
@@ -486,7 +488,7 @@ async function copyShareMessage(message){
   field.focus();field.select();field.setSelectionRange(0,field.value.length);
   try{return document.execCommand("copy");}catch(err){return false;}
 }
-async function shareToInstagram(recipient){
+function shareToInstagram(recipient){
   if(!Object.prototype.hasOwnProperty.call(INSTAGRAM_ACCOUNTS,recipient)) return;
   const person=recipient==="sara"?"Sara":"Juan";
   const name=sharedView?"":document.getElementById("name").value.trim();
@@ -499,19 +501,23 @@ async function shareToInstagram(recipient){
   const target="https://ig.me/m/"+INSTAGRAM_ACCOUNTS[recipient];
   field.value=message;
   link.href=target;
-  link.textContent="Abrir el chat con "+person;
+  link.textContent="Enviar resultados a "+person;
   panel.classList.remove("hidden");
-  status.textContent="Preparando tu mensaje…";
-  const copied=await copyShareMessage(message);
+  status.textContent="Copia este mensaje y luego pulsa «Enviar resultados a "+person+"». En Instagram, pégalo y envíalo.";
+  panel.scrollIntoView({behavior:"smooth",block:"center"});
+}
+async function copyPreparedMessage(){
+  const field=document.getElementById("shareMessage");
+  const status=document.getElementById("shareStatus");
+  const copied=await copyShareMessage(field.value);
   if(copied){
-    status.textContent="Mensaje copiado. Pégalo en el chat de "+person+" y envíalo.";
-    // Same-tab navigation after copying avoids popup blockers.
-    window.location.assign(target);
+    status.textContent="Mensaje copiado. Ahora pulsa el botón de abajo; en Instagram, pega el mensaje y envíalo.";
   }else{
-    status.textContent="Selecciona y copia el mensaje. Después abre el chat, pégalo y envíalo.";
-    field.focus();field.select();field.setSelectionRange(0,message.length);
+    status.textContent="Mantén presionado el texto y selecciona Copiar. Después abre el chat, pégalo y envíalo.";
+    field.focus();field.select();field.setSelectionRange(0,field.value.length);
   }
 }
+
 function restoreSharedResult(){
   if(!location.hash.startsWith("#resultado=")) return false;
   const match=/^#resultado=1\.([0-3]{7})$/.exec(location.hash);
