@@ -98,40 +98,51 @@ function quizContext(lead){
 }
 function buildQuizMessages(lead) {
   const rawName = typeof lead.name === "string" ? lead.name.trim().replace(/\s+/g, " ").slice(0, 120) : "";
-  const greeting = rawName ? `Hola, ${rawName}.` : "Hola.";
-  const template = QUIZ_VOICE_TEMPLATES[lead.segment];
-  if (!template) return {
-    sara: `${greeting} Estuve mirando tu diagnóstico y me gustaría conocerte un poquito más. ¿Qué parte de tu resultado refleja mejor lo que estás viviendo hoy?`,
-    juan: `${greeting} Revisé tu diagnóstico. ¿Qué parte del resultado describe mejor lo que necesitas trabajar hoy?`
-  };
-  const [situation,blocker,duration,stage]=quizContext(lead);
-  if(situation<0 && blocker<0)return {sara:`${greeting} ${template.sara}`,juan:`${greeting} ${template.juan}`};
-  const situations=[
+  const prefix = rawName ? rawName + ", " : "";
+  const [situation, blocker, duration] = quizContext(lead);
+  const descriptions = [
     "sientes que hay algo más para ti, pero todavía te falta claridad sobre la dirección que quieres tomar",
     "sabes lo que quieres hacer, pero las dudas o la postergación te están frenando",
-    "tienes experiencia o conocimiento que quieres convertir en una propuesta clara",
-    "has logrado cosas importantes, pero sientes que algo no está alineado o le falta sentido"
+    "tienes experiencia o conocimiento y quieres convertirlo en una propuesta clara que genere impacto",
+    "has logrado cosas importantes, pero sientes que algo no está alineado con la vida que quieres vivir"
   ];
-  const blockers=[
-    "tienes varias ideas y te está costando encontrar una dirección clara",
-    "te identificaste con el miedo, el perfeccionismo o la necesidad de aprobación como posibles frenos",
-    "te está costando estructurar tu mensaje o lo que quieres ofrecer",
-    "haces muchas cosas, pero no sientes una conexión real con ellas"
+  const blockers = [
+    "te está costando encontrar una dirección clara entre tantas ideas",
+    "te identificaste con algunas dificultades para pasar a la acción",
+    "te está costando estructurar tu mensaje o tu oferta",
+    "haces muchas cosas, pero no sientes la conexión que quisieras con ellas"
   ];
-  const durations=["menos de tres meses","entre tres y doce meses","entre uno y tres años","más de tres años"];
-  const main=situation>=0?situations[situation]:blockers[blocker];
-  const extra=blocker>=0 && blocker!==situation ? ` También señalaste que ${blockers[blocker]}.` : "";
-  const time=duration>=0?` Esto lleva ${durations[duration]}.`:"";
-  const questions={
-    clarity:situation===1?"¿En qué parte de tu vida te está afectando más esta situación?":"¿En qué parte de tu vida estás sintiendo más esa falta de dirección?",
-    action:"¿Cuál es el paso concreto que hoy te cuesta poner en marcha?",
-    influence:stage===2?"¿Qué suelen pedirte las personas que ya te buscan?":stage===3?"¿A quién estás ayudando hoy con lo que haces?":"¿A quién te gustaría ayudar con lo que sabes?",
-    alignment:"¿En qué parte de tu vida sientes que estás cumpliendo, pero no viviendo algo que de verdad te representa?"
+  const fallbackBySegment = {
+    clarity: "hoy estás buscando mayor claridad sobre tu propósito y dirección",
+    action: "quieres pasar de lo que sabes a dar pasos concretos",
+    influence: "quieres dar forma a tu experiencia para ayudar a otras personas",
+    alignment: "quieres alinear lo que haces con la vida que deseas construir"
   };
-  return {
-    sara:`${greeting} Estuve mirando tu resultado y me gustaría escucharte un poquito más. Me cuentas que ${main}.${extra}${time}\n\nCuéntame, ${questions[lead.segment].replace(/^¿(.)/,(_,letter)=>"¿"+letter.toLowerCase())}`,
-    juan:`${greeting} Revisé tu resultado: ${main}.${extra}${time}\n\n${questions[lead.segment]}`
+  const problem = situation >= 0 ? descriptions[situation] :
+    blocker >= 0 ? blockers[blocker] :
+    fallbackBySegment[lead.segment] || "hay algo importante que quieres trabajar en esta etapa";
+  const durations = ["menos de tres meses", "entre tres y doce meses", "entre uno y tres años", "más de tres años"];
+  const durationKnown = duration >= 0 && duration < durations.length;
+  const time = durationKnown ? durations[duration] : "";
+  const actions = {
+    clarity: "encontrar esa claridad",
+    action: "pasar a la acción",
+    influence: "darle forma a esa propuesta",
+    alignment: "sentirte más alineado con lo que quieres vivir"
   };
+  const goal = actions[lead.segment] || "resolver esta situación";
+  // El test recoge situación y duración, pero NO pregunta por intentos previos.
+  // Avanzar al paso 5 del Guion Maestro cuando se conoce el tiempo; si falta, paso 4.
+  const question = durationKnown
+    ? `¿Qué has hecho durante ${time} para ${goal}?`
+    : "¿Hace cuánto tiempo vienes viviendo esta situación?";
+  const sara = durationKnown
+    ? `${prefix}estuve mirando tus respuestas del test y veo que ${problem}. También vi que llevas ${time} en esta situación.\n\nMe gustaría conocerte un poquito más. Cuéntame, ${question.charAt(0).toLowerCase() + question.slice(1)}`
+    : `${prefix}estuve mirando tus respuestas del test y veo que ${problem}.\n\nMe gustaría conocerte un poquito más. Cuéntame, ${question.charAt(0).toLowerCase() + question.slice(1)}`;
+  const juan = durationKnown
+    ? `${prefix}estuve revisando tus respuestas del test y veo que ${problem}.\n\nTambién vi que llevas ${time} así. Cuéntame, ${question.charAt(0).toLowerCase() + question.slice(1)}`
+    : `${prefix}estuve revisando tus respuestas del test y veo que ${problem}.\n\nCuéntame, ${question.charAt(0).toLowerCase() + question.slice(1)}`;
+  return { sara, juan };
 }
 function quizCopyUrl(lead) {
   const name=typeof lead.name==="string"?lead.name.trim().replace(/\s+/g," ").slice(0,120):"";
