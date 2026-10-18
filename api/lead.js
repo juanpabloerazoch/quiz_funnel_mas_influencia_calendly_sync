@@ -256,7 +256,10 @@ async function syncQuizToManychat(lead, scoresText) {
   const result = QUIZ_RESULT_MAP[lead.segment] || QUIZ_RESULT_MAP.clarity;
   const diagnosis = SEGMENT_MAP[lead.segment] || SEGMENT_MAP.clarity;
 
-  const fields = [
+  // Campo adicional para el nuevo mensaje; no altera los campos ni el flujo existente.
+  // Se elige la voz usando la cuenta que realmente acepta al suscriptor.
+  const voiceMessages = buildQuizMessages(lead);
+  const fieldsBase = [
     ["Diagnóstico Quiz", diagnosis],
     ["Conclusión Quiz", result.conclusion],
     ["Pregunta clave Quiz", result.question],
@@ -286,6 +289,10 @@ async function syncQuizToManychat(lead, scoresText) {
 
       const fieldResults = [];
       let successfulFields = 0;
+      const fields = [
+        ...fieldsBase,
+        ["Mensaje personalizado Quiz", voiceMessages[item.account]]
+      ];
 
       for (const [fieldName, fieldValue] of fields) {
         try {
