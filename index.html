@@ -166,6 +166,8 @@ input:focus{border-color:var(--accent)}
     <p id="resultIntro"></p>
 
     <p id="sharedNotice" class="note hidden">Resultado compartido · Las respuestas y el diagnóstico aparecen abajo.</p>
+    <h3 style="margin-top:24px">Áreas que más necesitas trabajar</h3>
+    <p class="note">Una barra más larga indica que tus respuestas señalan un mayor bloqueo en esa área. Las barras comparan tus bloqueos entre sí; no representan porcentajes de capacidad ni de avance.</p>
     <div class="scorebar" id="scoreBars"></div>
 
     <h3 style="margin-top:28px">Tu roadmap de 3 pasos</h3>
@@ -450,11 +452,11 @@ function renderResult(){
   document.getElementById("resultTitle").textContent=p.title;
   document.getElementById("resultIntro").textContent=p.intro;
   document.getElementById("roadmap").innerHTML=p.roadmap.map(([a,b])=>`<div class="step"><strong>${a}</strong><span>${b}</span></div>`).join("");
-  const labels={clarity:"Claridad",action:"Activación",influence:"Influencia",alignment:"Alineación"};
+  const labels={clarity:"Falta de claridad",action:"Dificultad para tomar acción",influence:"Dificultad para expandir tu influencia",alignment:"Desalineación con tu propósito"};
   const max=Math.max(...Object.values(scores),1);
   document.getElementById("scoreBars").innerHTML=Object.entries(scores).map(([k,v])=>{
     const pct=Math.round((v/max)*100);
-    return `<div class="score-row"><div class="score-label"><span>${labels[k]}</span><span>${v}</span></div><div class="score-track"><div class="score-fill" style="width:${pct}%"></div></div></div>`
+    return `<div class="score-row"><div class="score-label"><span>${labels[k]}</span><span>${v} puntos</span></div><div class="score-track"><div class="score-fill" style="width:${pct}%"></div></div></div>`
   }).join("");
   document.getElementById("ctaButton").href=DESTINATION_URL;
 }
