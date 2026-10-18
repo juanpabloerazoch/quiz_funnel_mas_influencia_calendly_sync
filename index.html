@@ -88,6 +88,12 @@ input:focus{border-color:var(--accent)}
 .score-label{display:flex;justify-content:space-between;font-size:13px;color:#c7c0b5;margin-bottom:7px}
 .score-track{height:9px;background:#242424;border-radius:999px;overflow:hidden}
 .score-fill{height:100%;background:linear-gradient(90deg,var(--accent),var(--accent2))}
+.contact-actions{display:grid;gap:12px;margin:20px 0 14px}
+.share-panel{margin-top:16px;padding:18px;border:1px solid #51452e;border-radius:16px;background:#111}
+.share-panel textarea{width:100%;min-height:150px;padding:12px;background:#191919;color:var(--text);border:1px solid #51452e;border-radius:12px;font:inherit;resize:vertical;margin:12px 0}
+.answer-detail{padding:14px 0;border-bottom:1px solid var(--line)}
+.answer-detail strong{display:block;margin-bottom:6px;color:var(--accent2)}
+.btn:focus-visible{outline:3px solid var(--accent2);outline-offset:4px}
 .footer{margin-top:24px;text-align:center;font-size:12px;color:#777}
 @media(max-width:640px){
   .card{padding:24px 18px;border-radius:20px}
@@ -159,6 +165,7 @@ input:focus{border-color:var(--accent)}
     <h2 id="resultTitle"></h2>
     <p id="resultIntro"></p>
 
+    <p id="sharedNotice" class="note hidden">Resultado compartido · Las respuestas y el diagnóstico aparecen abajo.</p>
     <div class="scorebar" id="scoreBars"></div>
 
     <h3 style="margin-top:28px">Tu roadmap de 3 pasos</h3>
@@ -166,10 +173,22 @@ input:focus{border-color:var(--accent)}
 
     <div class="result-teaser">
       <h3>Tu siguiente conversación</h3>
-      <p id="ctaCopy">Si este diagnóstico puso nombre a algo que llevas tiempo sintiendo, puedes aplicar a una conversación con Juan y Sara. Allí profundizaremos en tu situación, veremos qué te está frenando y evaluaremos si nuestro acompañamiento es el espacio correcto para tu siguiente etapa.</p>
-      <a id="ctaButton" class="btn" href="https://calendly.com/masinfluencia-info/mentoria-de-claridad-influencia-con-juan-y-sar-clone" target="_blank" rel="noopener">Agendar mi llamada de diagnóstico</a>
+      <p id="ctaCopy">¿Quieres entender mejor tus resultados y saber por dónde empezar? Compártelos con Sara o Juan por Instagram. Si prefieres conversar en una llamada, también puedes agendar tu diagnóstico.</p>
+      <div class="contact-actions">
+        <button id="shareSara" class="btn" type="button" onclick="shareToInstagram('sara')">Enviarle mis resultados a Sara</button>
+        <button id="shareJuan" class="btn" type="button" onclick="shareToInstagram('juan')">Enviarle mis resultados a Juan</button>
+        <a id="ctaButton" class="btn secondary" href="https://calendly.com/masinfluencia-info/mentoria-de-claridad-influencia-con-juan-y-sar-clone" target="_blank" rel="noopener">Agendar una llamada de diagnóstico</a>
+      </div>
+      <div class="note">Al compartir, se copia un mensaje con el enlace a tus resultados. Pégalo en Instagram y envíalo. El enlace incluye tus respuestas, sin correo ni teléfono.</div>
+      <div id="sharePanel" class="share-panel hidden">
+        <p id="shareStatus" role="status" aria-live="polite"></p>
+        <label for="shareMessage">Tu mensaje para enviar</label>
+        <textarea id="shareMessage" readonly></textarea>
+        <a id="openInstagram" class="btn" href="https://ig.me/m/saraarcilaz" rel="noopener">Abrir el chat de Instagram</a>
+      </div>
     </div>
 
+    <div id="sharedAnswers" class="hidden" style="margin:24px 0"><h3>Respuestas del diagnóstico</h3><div id="answerDetails"></div></div>
     <button class="btn secondary" onclick="restartQuiz()">Volver a realizar el diagnóstico</button>
   </section>
 
@@ -340,6 +359,8 @@ let qIndex = 0;
 let scores = {clarity:0,action:0,influence:0,alignment:0};
 let answers = [];
 let winner = null;
+let answerChoices = [];
+let sharedView = false;
 
 function show(id){
   ["landing","quiz","analyzing","capture","result"].forEach(x=>document.getElementById(x).classList.add("hidden"));
@@ -366,6 +387,7 @@ function renderQuestion(){
   });
 }
 function chooseOption(i,o){
+  answerChoices.push(i);
   answers.push({question:qIndex+1, answer:o.t});
   Object.entries(o.s).forEach(([k,v])=>scores[k]+=v);
   qIndex++;
@@ -435,9 +457,91 @@ function renderResult(){
   document.getElementById("ctaButton").href=DESTINATION_URL;
 }
 function restartQuiz(){
+  history.replaceState(null, "", location.pathname + location.search);
+  sharedView=false;answerChoices=[];leadSubmitInProgress=false;
+  document.querySelector('#leadForm button[type="submit"]').disabled=false;
+  document.getElementById("sharePanel").classList.add("hidden");
+  document.getElementById("sharedNotice").classList.add("hidden");
+  document.getElementById("sharedAnswers").classList.add("hidden");
   qIndex=0;scores={clarity:0,action:0,influence:0,alignment:0};answers=[];winner=null;
   show("landing");
 }
+
+const INSTAGRAM_ACCOUNTS = {sara:"saraarcilaz",juan:"juanpabloerazoch"};
+function resultShareUrl(){
+  if(answerChoices.length!==questions.length) throw new Error("Resultado incompleto");
+  const url=new URL(location.pathname, location.origin);
+  // Only answer indexes are shared. Never contact details or ManyChat identifiers.
+  url.hash="resultado=1."+answerChoices.join("");
+  return url.href;
+}
+async function copyShareMessage(message){
+  try{
+    if(navigator.clipboard && window.isSecureContext){
+      await navigator.clipboard.writeText(message);
+      return true;
+    }
+  }catch(err){}
+  const field=document.getElementById("shareMessage");
+  field.focus();field.select();field.setSelectionRange(0,field.value.length);
+  try{return document.execCommand("copy");}catch(err){return false;}
+}
+async function shareToInstagram(recipient){
+  if(!Object.prototype.hasOwnProperty.call(INSTAGRAM_ACCOUNTS,recipient)) return;
+  const person=recipient==="sara"?"Sara":"Juan";
+  const name=sharedView?"":document.getElementById("name").value.trim();
+  const greeting=name ? " Soy "+name+"." : "";
+  const message="Hola, "+person+"."+greeting+" Completé el diagnóstico de +Influencia y quiero entender mejor mis resultados. Aquí puedes verlos: "+resultShareUrl();
+  const panel=document.getElementById("sharePanel");
+  const field=document.getElementById("shareMessage");
+  const status=document.getElementById("shareStatus");
+  const link=document.getElementById("openInstagram");
+  const target="https://ig.me/m/"+INSTAGRAM_ACCOUNTS[recipient];
+  field.value=message;
+  link.href=target;
+  link.textContent="Abrir el chat con "+person;
+  panel.classList.remove("hidden");
+  status.textContent="Preparando tu mensaje…";
+  const copied=await copyShareMessage(message);
+  if(copied){
+    status.textContent="Mensaje copiado. Pégalo en el chat de "+person+" y envíalo.";
+    // Same-tab navigation after copying avoids popup blockers.
+    window.location.assign(target);
+  }else{
+    status.textContent="Selecciona y copia el mensaje. Después abre el chat, pégalo y envíalo.";
+    field.focus();field.select();field.setSelectionRange(0,message.length);
+  }
+}
+function restoreSharedResult(){
+  if(!location.hash.startsWith("#resultado=")) return false;
+  const match=/^#resultado=1\.([0-3]{7})$/.exec(location.hash);
+  if(!match) return false;
+  const choices=Array.from(match[1],Number);
+  if(choices.some((choice,index)=>!questions[index].options[choice])) return false;
+  answerChoices=choices;
+  scores={clarity:0,action:0,influence:0,alignment:0};
+  answers=choices.map((choice,index)=>{
+    const option=questions[index].options[choice];
+    Object.entries(option.s).forEach(([key,value])=>scores[key]+=value);
+    return {question:index+1,answer:option.t};
+  });
+  winner=Object.keys(scores).sort((a,b)=>scores[b]-scores[a])[0];
+  sharedView=true;
+  renderResult();show("result");
+  document.getElementById("sharedNotice").classList.remove("hidden");
+  const details=document.getElementById("answerDetails");
+  details.replaceChildren();
+  answers.forEach((answer,index)=>{
+    const row=document.createElement("div");row.className="answer-detail";
+    const title=document.createElement("strong");title.textContent=(index+1)+". "+questions[index].title;
+    const text=document.createElement("span");text.textContent=answer.answer;
+    row.append(title,text);details.appendChild(row);
+  });
+  document.getElementById("sharedAnswers").classList.remove("hidden");
+  return true;
+}
+restoreSharedResult();
+
 </script>
 </body>
 </html>
