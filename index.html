@@ -354,7 +354,7 @@ details.step .body{padding:0 14px 16px 54px;font-size:14.5px;line-height:1.55;co
         <div class="badge" aria-hidden="true"><svg class="ico"><use href="#i-chat"/></svg></div>
         <h3 id="chatTitle">Te estamos escribiendo</h3>
         <p id="chatText">En unos segundos verás nuestro mensaje en el chat de Instagram. Espéralo y respóndele allí.</p>
-        <button class="btn" type="button" onclick="backToChat()">Volver al chat</button>
+        <button class="btn" type="button" id="chatBtn" onclick="backToChat()">Volver al chat</button>
         <div class="sendnote" id="chatHint">O toca la <b>X</b> arriba a la izquierda para volver al chat.</div>
       </div>
       <a class="link" id="chatCalLink" href="https://calendly.com/masinfluencia-info/mentoria-de-claridad-influencia-con-juan-y-sar-clone" target="_blank" rel="noopener" data-cal><svg class="ico"><use href="#i-cal"/></svg> Prefiero agendar una llamada</a>
@@ -1142,15 +1142,28 @@ function setContactMode(){
   document.getElementById("contactTitle").textContent=qualified?"¿Prefieres escribirnos primero?":"¿Lo revisamos juntos?";
   if(chatAccount && !sharedView){
     const person = chatAccount==="sara" ? "Sara" : chatAccount==="juan" ? "Juan" : "";
-    document.getElementById("chatRowText").innerHTML="¿Prefieres hablar primero? <b>"+(person?person+" te está escribiendo":"Te estamos escribiendo")+"</b> en el chat. Toca la <b>X</b> arriba para volver.";
-    document.getElementById("chatTitle").textContent = person ? person+" te está escribiendo" : "Te estamos escribiendo";
-    document.getElementById("chatText").textContent = "En unos segundos verás "+(person?"su mensaje":"nuestro mensaje")+" en el chat de Instagram. Espéralo y respóndele allí.";
+    const who = person ? person+" te está escribiendo" : "Te estamos escribiendo";
+    if(IN_INSTAGRAM){
+      // Dentro de Instagram: el chat está detrás de esta ventana.
+      document.getElementById("chatRowText").innerHTML="¿Prefieres hablar primero? <b>"+who+"</b> en el chat. Toca la <b>X</b> arriba para volver.";
+      document.getElementById("chatText").textContent = "En unos segundos verás "+(person?"su mensaje":"nuestro mensaje")+" en el chat de Instagram. Espéralo y respóndele allí.";
+      document.getElementById("chatBtn").textContent = "Volver al chat";
+      document.getElementById("chatHint").innerHTML = "O toca la <b>X</b> arriba a la izquierda para volver al chat.";
+    } else {
+      // Navegador normal (Safari, Chrome, WhatsApp, correo): el mensaje está en Instagram.
+      document.getElementById("chatRowText").innerHTML="¿Prefieres hablar primero? <b>"+who+" por Instagram.</b> <a href=\"https://www.instagram.com/direct/inbox/\" rel=\"noopener\" style=\"color:var(--gold)\">Abrir mis mensajes</a>";
+      document.getElementById("chatText").textContent = "En unos segundos verás "+(person?"su mensaje":"nuestro mensaje")+" en tus mensajes de Instagram. Espéralo y respóndele allí.";
+      document.getElementById("chatBtn").textContent = "Abrir mis mensajes de Instagram";
+      document.getElementById("chatHint").textContent = "Se abre Instagram en tu bandeja de mensajes.";
+    }
+    document.getElementById("chatTitle").textContent = who;
     chat.classList.remove("hidden"); contact.classList.add("hidden");
   } else {
     chat.classList.add("hidden"); contact.classList.remove("hidden");
   }
 }
 function backToChat(){
+  if(!IN_INSTAGRAM){ location.href="https://www.instagram.com/direct/inbox/"; return; }
   try{ window.close(); }catch(e){}
   setTimeout(()=>{
     const hint=document.getElementById("chatHint");
