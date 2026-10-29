@@ -96,7 +96,8 @@ const QUIZ_OCCUPATION_PHRASES = [
   "trabajas como empleado(a)",
   "tienes tu propio negocio o emprendimiento",
   "trabajas de forma independiente",
-  "estás en una etapa de estudio o transición"
+  "estás estudiando",
+  "estás en una etapa de transición"
 ];
 function quizFlag(code) {
   const c = String(code || "").toUpperCase();
@@ -172,7 +173,11 @@ function buildQuizMessages(lead) {
       : (firstName ? `Hola, ${firstName}.` : "Hola.");
     const opener = voice === "sara" ? "Recibí tus respuestas del diagnóstico." : "Revisé tus respuestas del diagnóstico.";
     const about = aboutYou(voice);
-    return `${hello}\n\n${opener}${about ? " " + about : ""}\n\n${diagnosis}\n\nCuéntame, ${question}`;
+    // Prospecto calificado: cierra invitando a la llamada (siempre con pregunta).
+    const close = lead.qualified === true
+      ? `Y como me dijiste que resolver esto es una prioridad para ti, creo que vale la pena revisarlo juntos.\n\n¿Te gustaría que agendemos una llamada corta de diagnóstico con ${voice === "sara" ? "Juan" : "Sara"} y conmigo?`
+      : `Cuéntame, ${question}`;
+    return `${hello}\n\n${opener}${about ? " " + about : ""}\n\n${diagnosis}\n\n${close}`;
   }
   return { sara: build("sara"), juan: build("juan") };
 }
@@ -183,7 +188,7 @@ function loadMessages(){
     if(!raw || raw.length>2000)throw new Error("invalid");
     const data=JSON.parse(raw);
     if(![1,2,3].includes(data.v) || typeof data.n!=="string" || data.n.length>120 || !Object.prototype.hasOwnProperty.call(QUIZ_VOICE_TEMPLATES,data.s))throw new Error("invalid");
-    const messages=buildQuizMessages({name:data.n,segment:data.s,context:data.c,country:typeof data.p==="string"?data.p:"",country_code:typeof data.k==="string"?data.k:"",occupation:Number.isInteger(data.o)?data.o:-1});
+    const messages=buildQuizMessages({name:data.n,segment:data.s,context:data.c,country:typeof data.p==="string"?data.p:"",country_code:typeof data.k==="string"?data.k:"",occupation:Number.isInteger(data.o)?data.o:-1,qualified:data.q===1});
     document.getElementById("title").textContent=data.n ? "Mensajes para "+data.n : "Mensajes listos para copiar";
     document.getElementById("sara").value=messages.sara;
     document.getElementById("juan").value=messages.juan;

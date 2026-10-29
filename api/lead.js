@@ -107,7 +107,8 @@ const QUIZ_OCCUPATION_PHRASES = [
   "trabajas como empleado(a)",
   "tienes tu propio negocio o emprendimiento",
   "trabajas de forma independiente",
-  "estás en una etapa de estudio o transición"
+  "estás estudiando",
+  "estás en una etapa de transición"
 ];
 function quizFlag(code) {
   const c = String(code || "").toUpperCase();
@@ -183,16 +184,28 @@ function buildQuizMessages(lead) {
       : (firstName ? `Hola, ${firstName}.` : "Hola.");
     const opener = voice === "sara" ? "Recibí tus respuestas del diagnóstico." : "Revisé tus respuestas del diagnóstico.";
     const about = aboutYou(voice);
-    return `${hello}\n\n${opener}${about ? " " + about : ""}\n\n${diagnosis}\n\nCuéntame, ${question}`;
+    // Prospecto calificado: cierra invitando a la llamada (siempre con pregunta).
+    const close = lead.qualified === true
+      ? `Y como me dijiste que resolver esto es una prioridad para ti, creo que vale la pena revisarlo juntos.\n\n¿Te gustaría que agendemos una llamada corta de diagnóstico con ${voice === "sara" ? "Juan" : "Sara"} y conmigo?`
+      : `Cuéntame, ${question}`;
+    return `${hello}\n\n${opener}${about ? " " + about : ""}\n\n${diagnosis}\n\n${close}`;
   }
   return { sara: build("sara"), juan: build("juan") };
 }
 
+const QUIZ_PRIORITY_ANSWER = "Es una prioridad. Estoy dispuesto(a) a tomar decisiones y aplicar acompañamiento.";
+function isQualifiedLead(lead) {
+  const answers = Array.isArray(lead.answers) ? lead.answers : [];
+  const normalize = s => String(s || "").trim().replace(/\s+/g, " ").toLowerCase();
+  const p7 = answers.find(a => Number(a.question) === 7);
+  const priority = !!p7 && normalize(p7.answer) === normalize(QUIZ_PRIORITY_ANSWER);
+  return priority && [0, 1, 2].includes(lead.occupation);
+}
 function quizCopyUrl(lead) {
   const name=typeof lead.name==="string"?lead.name.trim().replace(/\s+/g," ").slice(0,120):"";
   const segment=Object.prototype.hasOwnProperty.call(QUIZ_VOICE_TEMPLATES,lead.segment)?lead.segment:"clarity";
-  const occupation=Number.isInteger(lead.occupation)&&lead.occupation>=0&&lead.occupation<=3?lead.occupation:-1;
-  const params=new URLSearchParams({datos:JSON.stringify({v:3,n:name,s:segment,c:quizContext(lead),p:cleanText(lead.country,40),k:cleanText(lead.country_code,2),o:occupation})});
+  const occupation=Number.isInteger(lead.occupation)&&lead.occupation>=0&&lead.occupation<=4?lead.occupation:-1;
+  const params=new URLSearchParams({datos:JSON.stringify({v:3,n:name,s:segment,c:quizContext(lead),p:cleanText(lead.country,40),k:cleanText(lead.country_code,2),o:occupation,q:lead.qualified===true?1:0})});
   return "https://quizfunnelmasinfluenciacalendlysync.vercel.app/copiar#"+params.toString();
 }
 function quizMessageBlocks(messages,copyUrl) {
@@ -404,10 +417,12 @@ export default async function handler(req, res) {
 
   try {
     const lead = req.body || {};
+    lead.qualified = isQualifiedLead(lead);
     const segment = SEGMENT_MAP[lead.segment] || "Claridad de identidad y propósito";
     const answersText = [
       ...(Array.isArray(lead.answers) ? lead.answers.map(a => `P${a.question}: ${a.answer}`) : []),
-      lead.country ? `País: ${cleanText(lead.country, 40)}` : ""
+      lead.country ? `País: ${cleanText(lead.country, 40)}` : "",
+      `Calificado para llamada: ${lead.qualified ? "Sí" : "No"}`
     ].filter(Boolean).join("\n");
     const scoresText = lead.scores
       ? `Claridad: ${lead.scores.clarity || 0} | Activación: ${lead.scores.action || 0} | Influencia: ${lead.scores.influence || 0} | Alineación: ${lead.scores.alignment || 0}`

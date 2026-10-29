@@ -148,6 +148,12 @@ details.step .body{padding:0 14px 16px 54px;font-size:14.5px;line-height:1.55;co
 .who button[aria-pressed="true"]{border-color:var(--gold);background:var(--gold-bg);color:var(--text)}
 .sendnote{font-size:12.5px;color:var(--muted);text-align:center;margin:9px 0 4px;line-height:1.45}
 .copied{font-size:13.5px;color:var(--ok);text-align:center;margin-bottom:9px;font-weight:600}
+.callcard{background:var(--panel);border:1.5px solid var(--gold);border-radius:20px;padding:20px 18px}
+.callcard h3{font-size:20px;line-height:1.25;margin:8px 0 8px}
+.callcard p{font-size:14.5px;margin:0 0 16px}
+.chatrow{display:flex;gap:12px;align-items:center;background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:14px;margin-top:12px;font-size:14px;line-height:1.45;color:var(--soft)}
+.chatrow .dot{flex:none;width:38px;height:38px;border-radius:50%;background:var(--gold-bg);border:1px solid var(--gold);display:flex;align-items:center;justify-content:center;color:var(--gold);font-size:18px}
+.chatrow b{color:var(--text)}
 .chatcard{background:var(--panel);border:1px solid var(--gold-line);border-radius:20px;padding:20px 18px;text-align:center}
 .chatcard .badge{width:52px;height:52px;font-size:24px;margin-bottom:10px}
 .chatcard h3{font-size:20px;margin:0 0 6px}
@@ -328,21 +334,35 @@ details.step .body{padding:0 14px 16px 54px;font-size:14.5px;line-height:1.55;co
       <div class="hint">Toca cada paso para ver el detalle</div>
     </div>
 
+    <!-- Prospecto calificado: invitación destacada a la llamada -->
+    <div class="section hidden" id="callBlock">
+      <div class="callcard">
+        <div class="eyebrow" style="margin:0">Tu siguiente paso</div>
+        <h3 id="callTitle">Como dijiste que esto es prioridad, ¿lo revisamos juntos?</h3>
+        <p>Reserva una llamada de diagnóstico con Juan y Sara. Sales con claridad sobre tu siguiente paso.</p>
+        <a class="btn" href="https://calendly.com/masinfluencia-info/mentoria-de-claridad-influencia-con-juan-y-sar-clone" target="_blank" rel="noopener" data-cal><svg class="ico"><use href="#i-cal"/></svg> Reservar mi llamada</a>
+      </div>
+    </div>
+
     <!-- Llegó desde ManyChat: ya le escribimos en el chat -->
     <div class="section hidden" id="chatBlock">
-      <div class="chatcard">
+      <div id="chatRow" class="chatrow hidden">
+        <div class="dot" aria-hidden="true"><svg class="ico"><use href="#i-chat"/></svg></div>
+        <div id="chatRowText">¿Prefieres hablar primero? <b>Te estamos escribiendo</b> en el chat. Toca la X arriba para volver.</div>
+      </div>
+      <div class="chatcard" id="chatCard">
         <div class="badge" aria-hidden="true"><svg class="ico"><use href="#i-chat"/></svg></div>
         <h3 id="chatTitle">Te estamos escribiendo</h3>
         <p id="chatText">En unos segundos verás nuestro mensaje en el chat de Instagram. Espéralo y respóndele allí.</p>
         <button class="btn" type="button" onclick="backToChat()">Volver al chat</button>
         <div class="sendnote" id="chatHint">O toca la <b>X</b> arriba a la izquierda para volver al chat.</div>
       </div>
-      <a class="link" href="https://calendly.com/masinfluencia-info/mentoria-de-claridad-influencia-con-juan-y-sar-clone" target="_blank" rel="noopener" data-cal><svg class="ico"><use href="#i-cal"/></svg> Prefiero agendar una llamada</a>
+      <a class="link" id="chatCalLink" href="https://calendly.com/masinfluencia-info/mentoria-de-claridad-influencia-con-juan-y-sar-clone" target="_blank" rel="noopener" data-cal><svg class="ico"><use href="#i-cal"/></svg> Prefiero agendar una llamada</a>
     </div>
 
     <!-- Llegó desde otro lado: copiar y abrir el chat -->
     <div class="section" id="contactBlock">
-      <h3>¿Lo revisamos juntos?</h3>
+      <h3 id="contactTitle">¿Lo revisamos juntos?</h3>
       <p style="font-size:14.5px">Envíale tu resultado a Juan o a Sara por Instagram y te ayudan a entender por dónde empezar.</p>
       <div class="who" role="group" aria-label="¿A quién se lo envías?">
         <button type="button" id="whoSara" aria-pressed="true" onclick="pickRecipient('sara')">Sara</button>
@@ -500,7 +520,8 @@ const questions = [
       {t:"Trabajo como empleado(a).", s:{}},
       {t:"Tengo mi propio negocio o emprendimiento.", s:{}},
       {t:"Soy independiente: coach, terapeuta, consultor(a), creador(a)…", s:{}},
-      {t:"Estoy estudiando, en transición o en otra etapa.", s:{}}
+      {t:"Estoy estudiando.", s:{}},
+      {t:"Estoy buscando empleo o en una etapa de transición.", s:{}}
     ]
   }
 ];
@@ -682,7 +703,7 @@ function renderQuestion(){
     b.type="button";
     b.className="option";
     b.setAttribute("role","listitem");
-    const key=document.createElement("span"); key.className="key"; key.textContent="ABCD"[i];
+    const key=document.createElement("span"); key.className="key"; key.textContent="ABCDE"[i];
     const txt=document.createElement("span"); txt.textContent=o.t;
     b.append(key,txt);
     b.onclick=()=>chooseOption(i,o,b);
@@ -1011,6 +1032,7 @@ document.getElementById("leadForm").addEventListener("submit", async (e)=>{
     country:COUNTRY_NAMES[wa.code]||"",
     country_code:COUNTRY_NAMES[wa.code]?wa.code:"",
     occupation:Number.isInteger(answerChoices[7])?answerChoices[7]:-1,
+    qualified:answerChoices[6]===0 && [0,1,2].includes(answerChoices[7]),
     mc_id:MANYCHAT_CONTACT_ID,
     mc_pid:MANYCHAT_PAGE_ID,
     segment:winner,
@@ -1102,11 +1124,25 @@ let chatAccount = "";
 // Navegador interno de Instagram/Facebook: ahí los enlaces a Instagram piden iniciar sesión.
 const IN_INSTAGRAM = /Instagram|FBAN|FBAV|FB_IAB/i.test(navigator.userAgent||"");
 
+// Califica: dijo que es prioridad (P7 = A) y trabaja como empleado(a), tiene negocio o es independiente (P8 = A, B o C).
+function isQualified(){
+  return !sharedView && answerChoices[6]===0 && [0,1,2].includes(answerChoices[7]);
+}
 function setContactMode(){
   const chat=document.getElementById("chatBlock");
   const contact=document.getElementById("contactBlock");
+  const qualified=isQualified();
+  const fn=firstName();
+  document.getElementById("callBlock").classList.toggle("hidden",!qualified);
+  document.getElementById("callTitle").textContent=(fn?fn+", c":"C")+"omo dijiste que esto es prioridad, ¿lo revisamos juntos?";
+  document.getElementById("chatRow").classList.toggle("hidden",!qualified);
+  document.getElementById("chatCard").classList.toggle("hidden",qualified);
+  document.getElementById("chatCalLink").classList.toggle("hidden",qualified);
+  document.getElementById("ctaButton").classList.toggle("hidden",qualified);
+  document.getElementById("contactTitle").textContent=qualified?"¿Prefieres escribirnos primero?":"¿Lo revisamos juntos?";
   if(chatAccount && !sharedView){
     const person = chatAccount==="sara" ? "Sara" : chatAccount==="juan" ? "Juan" : "";
+    document.getElementById("chatRowText").innerHTML="¿Prefieres hablar primero? <b>"+(person?person+" te está escribiendo":"Te estamos escribiendo")+"</b> en el chat. Toca la <b>X</b> arriba para volver.";
     document.getElementById("chatTitle").textContent = person ? person+" te está escribiendo" : "Te estamos escribiendo";
     document.getElementById("chatText").textContent = "En unos segundos verás "+(person?"su mensaje":"nuestro mensaje")+" en el chat de Instagram. Espéralo y respóndele allí.";
     chat.classList.remove("hidden"); contact.classList.add("hidden");
@@ -1135,7 +1171,7 @@ function resultShareUrl(){
   return url.href;
 }
 let leadCountry="";
-const OCCUPATION_FIRST_PERSON=["trabajo como empleado(a)","tengo mi propio negocio o emprendimiento","trabajo de forma independiente","estoy en una etapa de estudio o transición"];
+const OCCUPATION_FIRST_PERSON=["trabajo como empleado(a)","tengo mi propio negocio o emprendimiento","trabajo de forma independiente","estoy estudiando","estoy en una etapa de transición"];
 function buildShareMessage(){
   const person=recipient==="sara"?"Sara":"Juan";
   const name=sharedView?"":document.getElementById("name").value.trim().replace(/\s+/g," ");
@@ -1220,7 +1256,7 @@ function copyStep(){
 // ---------- Resultado compartido (enlace con #resultado=) ----------
 function restoreSharedResult(){
   if(!location.hash.startsWith("#resultado=")) return false;
-  const match=/^#resultado=([12])\.([0-3]{7,8})$/.exec(location.hash);
+  const match=/^#resultado=([12])\.([0-3]{7}[0-4]?)$/.exec(location.hash);
   if(!match) return false;
   const version=Number(match[1]);
   const choices=Array.from(match[2],Number);
