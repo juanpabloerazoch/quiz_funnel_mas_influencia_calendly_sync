@@ -194,7 +194,7 @@ details.step .body{padding:0 14px 16px 54px;font-size:14.5px;line-height:1.55;co
   <section id="landing" class="screen">
     <div class="eyebrow">Diagnóstico gratuito</div>
     <h1>¿Qué está frenando tu <em>propósito</em> hoy?</h1>
-    <p>7 preguntas para descubrir tu principal cuello de botella y cuál es tu siguiente paso.</p>
+    <p>8 preguntas para descubrir tu principal cuello de botella y cuál es tu siguiente paso.</p>
     <div class="card authors">
       <div class="avatars"><div class="avatar">J</div><div class="avatar">S</div></div>
       <div class="txt">Creado por Juan y Sara<br><span>Mentores de +Influencia</span></div>
@@ -213,7 +213,7 @@ details.step .body{padding:0 14px 16px 54px;font-size:14.5px;line-height:1.55;co
     <div class="qhead">
       <button id="backBtn" class="back" type="button" onclick="goBack()" aria-label="Volver a la pregunta anterior"><svg class="ico"><use href="#i-arrow-l"/></svg></button>
       <div class="segs" id="segs" aria-hidden="true"></div>
-      <span class="qcount" id="progressText" aria-live="polite">1/7</span>
+      <span class="qcount" id="progressText" aria-live="polite">1/8</span>
     </div>
     <div class="eyebrow" id="questionKicker">Tu situación actual</div>
     <h2 id="questionTitle"></h2>
@@ -491,6 +491,16 @@ const questions = [
       {t:"Quiero resolverlo, pero primero necesito entender con claridad qué debo trabajar.", s:{clarity:2}},
       {t:"Sé que necesito moverme, pero todavía siento resistencia o miedo.", s:{action:2}},
       {t:"Estoy explorando. Quiero entender mejor mi situación antes de decidir mi siguiente paso.", s:{alignment:1,clarity:1}}
+    ]
+  },
+  {
+    kicker:"Para personalizar tu resultado",
+    title:"¿A qué te dedicas hoy?",
+    options:[
+      {t:"Trabajo como empleado(a).", s:{}},
+      {t:"Tengo mi propio negocio o emprendimiento.", s:{}},
+      {t:"Soy independiente: coach, terapeuta, consultor(a), creador(a)…", s:{}},
+      {t:"Estoy estudiando, en transición o en otra etapa.", s:{}}
     ]
   }
 ];
@@ -883,6 +893,7 @@ document.getElementById("email").addEventListener("blur",()=>updateEmailUi(docum
 document.getElementById("email").addEventListener("input",()=>{ const m=document.getElementById("emailMsg"); m.textContent=""; m.style.color=""; document.getElementById("email").classList.remove("bad"); });
 
 // ---------- WhatsApp ----------
+const COUNTRY_NAMES={CO:"Colombia",MX:"México",US:"Estados Unidos",ES:"España",VE:"Venezuela",PE:"Perú",EC:"Ecuador",CL:"Chile",AR:"Argentina",PA:"Panamá",CR:"Costa Rica",DO:"República Dominicana",GT:"Guatemala",SV:"El Salvador",HN:"Honduras",BO:"Bolivia",UY:"Uruguay",PY:"Paraguay",PR:"Puerto Rico",CA:"Canadá"};
 const COUNTRIES=[
   ["CO","🇨🇴","57",[10,10]],["MX","🇲🇽","52",[10,10]],["US","🇺🇸","1",[10,10]],["ES","🇪🇸","34",[9,9]],
   ["VE","🇻🇪","58",[10,10]],["PE","🇵🇪","51",[9,9]],["EC","🇪🇨","593",[9,9]],["CL","🇨🇱","56",[9,9]],
@@ -917,7 +928,9 @@ function readWhatsapp(){
   if(raw.startsWith("+") || digits.startsWith("00")){
     digits=digits.replace(/^00/,"");
     if(digits.length<8 || digits.length>15) return {error:"Revisa tu número: parece incompleto."};
-    return {value:"+"+digits};
+    const byDial=COUNTRIES.filter(c=>c[2] && c[2]!=="1" && digits.startsWith(c[2]));
+    const guess=byDial.length===1 ? byDial[0][0] : (sel!=="OT" && country[2] && digits.startsWith(country[2]) ? sel : "");
+    return {value:"+"+digits, code:guess};
   }
   if(sel==="OT") return {error:"Escribe tu número con el indicativo de tu país, por ejemplo +44 7700 900123."};
   const [min,max]=country[3];
@@ -925,7 +938,7 @@ function readWhatsapp(){
   if(sel==="CO" && digits.length===10 && !digits.startsWith("3")) return {error:"Los celulares en Colombia empiezan por 3. Revisa tu número."};
   if(digits.length<min) return {error:"A tu número le faltan dígitos."};
   if(digits.length>max) return {error:"A tu número le sobran dígitos."};
-  return {value:"+"+country[2]+" "+digits};
+  return {value:"+"+country[2]+" "+digits, code:sel};
 }
 
 // ---------- Envío del lead ----------
@@ -995,6 +1008,9 @@ document.getElementById("leadForm").addEventListener("submit", async (e)=>{
     email:emailInput.value.trim(),
     whatsapp:wa.value,
     instagram:confirmedIg,
+    country:COUNTRY_NAMES[wa.code]||"",
+    country_code:COUNTRY_NAMES[wa.code]?wa.code:"",
+    occupation:Number.isInteger(answerChoices[7])?answerChoices[7]:-1,
     mc_id:MANYCHAT_CONTACT_ID,
     mc_pid:MANYCHAT_PAGE_ID,
     segment:winner,
@@ -1002,6 +1018,7 @@ document.getElementById("leadForm").addEventListener("submit", async (e)=>{
     answers,
     created_at:new Date().toISOString()
   };
+  leadCountry=lead.country;
   storeSet("mas_influencia_quiz_lead", JSON.stringify(lead));
   storeSet(PENDING_KEY, JSON.stringify(lead));
   const saved=await postLead(lead);
@@ -1111,17 +1128,33 @@ function resetSendSteps(){
   document.getElementById("sharePanel").classList.add("hidden");
 }
 function resultShareUrl(){
-  if(answerChoices.length!==questions.length) throw new Error("Resultado incompleto");
+  if(answerChoices.length<7) throw new Error("Resultado incompleto");
   const url=new URL(location.pathname, location.origin);
   // Only answer indexes are shared. Never contact details or ManyChat identifiers.
   url.hash="resultado="+resultVersion+"."+answerChoices.join("");
   return url.href;
 }
+let leadCountry="";
+const OCCUPATION_FIRST_PERSON=["trabajo como empleado(a)","tengo mi propio negocio o emprendimiento","trabajo de forma independiente","estoy en una etapa de estudio o transición"];
 function buildShareMessage(){
   const person=recipient==="sara"?"Sara":"Juan";
-  const name=sharedView?"":document.getElementById("name").value.trim();
-  const greeting=name ? " Soy "+name+"." : "";
-  return "Hola, "+person+"."+greeting+" Completé el diagnóstico de +Influencia y quiero entender mejor mis resultados. Aquí puedes verlos: "+resultShareUrl();
+  const name=sharedView?"":document.getElementById("name").value.trim().replace(/\s+/g," ");
+  const occ=OCCUPATION_FIRST_PERSON[answerChoices[7]]||"";
+  const country=sharedView?"":leadCountry;
+  let about="";
+  if(name){
+    about="Mi nombre es "+name;
+    if(country && occ) about+=", soy de "+country+" y "+occ;
+    else if(country) about+=" y soy de "+country;
+    else if(occ) about+=" y "+occ;
+    about+=".";
+  } else if(occ){
+    about=occ.charAt(0).toUpperCase()+occ.slice(1)+".";
+  }
+  return "Hola, "+person+" 👋\n\n"+(about?about+"\n\n":"")+
+    "Hice el diagnóstico de +Influencia y mi resultado fue: "+PROFILE_NAMES[winner]+".\n\n"+
+    "Aquí están mis respuestas: "+resultShareUrl()+"\n\n"+
+    "¿Me ayudas a entender por dónde empezar?";
 }
 function pickRecipient(who){
   if(!Object.prototype.hasOwnProperty.call(INSTAGRAM_ACCOUNTS,who)) return;
@@ -1187,7 +1220,7 @@ function copyStep(){
 // ---------- Resultado compartido (enlace con #resultado=) ----------
 function restoreSharedResult(){
   if(!location.hash.startsWith("#resultado=")) return false;
-  const match=/^#resultado=([12])\.([0-3]{7})$/.exec(location.hash);
+  const match=/^#resultado=([12])\.([0-3]{7,8})$/.exec(location.hash);
   if(!match) return false;
   const version=Number(match[1]);
   const choices=Array.from(match[2],Number);

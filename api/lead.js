@@ -96,9 +96,30 @@ function quizContext(lead){
     return answer?QUIZ_CONTEXT_OPTIONS[i].findIndex(t=>normalize(t)===normalize(answer.answer)):-1;
   });
 }
+const QUIZ_PROFILE_NAMES = {
+  clarity: "Claridad de diseño",
+  action: "Activación",
+  influence: "Expansión de influencia",
+  alignment: "Alineación"
+};
+// Pregunta 8 (ocupación): frases en segunda persona para el mensaje de Sara/Juan.
+const QUIZ_OCCUPATION_PHRASES = [
+  "trabajas como empleado(a)",
+  "tienes tu propio negocio o emprendimiento",
+  "trabajas de forma independiente",
+  "estás en una etapa de estudio o transición"
+];
+function quizFlag(code) {
+  const c = String(code || "").toUpperCase();
+  if (!/^[A-Z]{2}$/.test(c)) return "";
+  return String.fromCodePoint(...[...c].map(ch => 0x1F1E6 + ch.charCodeAt(0) - 65));
+}
+function cleanText(value, max) {
+  return typeof value === "string" ? value.trim().replace(/\s+/g, " ").slice(0, max) : "";
+}
 function buildQuizMessages(lead) {
-  const rawName = typeof lead.name === "string" ? lead.name.trim().replace(/\s+/g, " ").slice(0, 120) : "";
-  const prefix = rawName ? rawName + ", " : "";
+  const rawName = cleanText(lead.name, 120);
+  const firstName = rawName.split(" ")[0] || "";
   const [situation, blocker, duration] = quizContext(lead);
   const descriptions = [
     "sientes que hay algo más para ti, pero todavía te falta claridad sobre la dirección que quieres tomar",
@@ -131,20 +152,47 @@ function buildQuizMessages(lead) {
     alignment: "sentirte más alineado con lo que quieres vivir"
   };
   const goal = actions[lead.segment] || "resolver esta situación";
-  // El test recoge situación y duración, pero NO pregunta por intentos previos.
-  // Avanzar al paso 5 del Guion Maestro cuando se conoce el tiempo; si falta, paso 4.
+  // El mensaje SIEMPRE termina con una pregunta (paso 5 del Guion Maestro si se conoce el tiempo; si no, paso 4).
   const question = durationKnown
-    ? `¿Qué has hecho durante estos ${time} que mencionaste en el test para ${goal}?`
-    : "¿Hace cuánto tiempo vienes viviendo esta situación?";
-  // La duración aparece solo en la pregunta, sin repetirla en el párrafo anterior.
-  const sara = `${prefix}estuve mirando tus respuestas del test y veo que ${problem}.\n\nCuéntame, ${question.charAt(0).toLowerCase() + question.slice(1)}`;
-  const juan = `${prefix}estuve revisando tus respuestas del test y veo que ${problem}.\n\nCuéntame, ${question.charAt(0).toLowerCase() + question.slice(1)}`;
-  return { sara, juan };
+    ? `¿qué has hecho durante estos ${time} que mencionaste en el test para ${goal}?`
+    : "¿hace cuánto tiempo vienes viviendo esta situación?";
+
+  const country = cleanText(lead.country, 40);
+  const countryCode = cleanText(lead.country_code, 2).toUpperCase();
+  const isColombia = countryCode === "CO" || /^colombia$/i.test(country);
+  const flag = quizFlag(countryCode);
+  const occIndex = Number.isInteger(lead.occupation) ? lead.occupation : -1;
+  const occ = QUIZ_OCCUPATION_PHRASES[occIndex] || "";
+
+  const profileName = QUIZ_PROFILE_NAMES[lead.segment] || "";
+  const problemSentence = problem.charAt(0).toUpperCase() + problem.slice(1) + ".";
+  const diagnosis = profileName ? `Tu diagnóstico fue: ${profileName}. ${problemSentence}` : `Veo que ${problem}.`;
+
+  function aboutYou(voice) {
+    let line = "";
+    if (country) {
+      if (isColombia) line = voice === "sara" ? "Veo que me escribes desde Colombia, ¡qué bueno, eres de aquí mismo!" : "Veo que eres de Colombia, de aquí mismo.";
+      else line = voice === "sara" ? `Veo que me escribes desde ${country}${flag ? " " + flag : ""}, ¡qué bueno que esto llegue hasta allá!` : `Veo que me escribes desde ${country}${flag ? " " + flag : ""}, qué bueno tenerte por aquí.`;
+    }
+    if (occ) line += line ? ` Y que ${occ}.` : `Veo que ${occ}.`;
+    return line;
+  }
+  function build(voice) {
+    const hello = voice === "sara"
+      ? (firstName ? `Hola, ${firstName} 👋` : "Hola 👋")
+      : (firstName ? `Hola, ${firstName}.` : "Hola.");
+    const opener = voice === "sara" ? "Recibí tus respuestas del diagnóstico." : "Revisé tus respuestas del diagnóstico.";
+    const about = aboutYou(voice);
+    return `${hello}\n\n${opener}${about ? " " + about : ""}\n\n${diagnosis}\n\nCuéntame, ${question}`;
+  }
+  return { sara: build("sara"), juan: build("juan") };
 }
+
 function quizCopyUrl(lead) {
   const name=typeof lead.name==="string"?lead.name.trim().replace(/\s+/g," ").slice(0,120):"";
   const segment=Object.prototype.hasOwnProperty.call(QUIZ_VOICE_TEMPLATES,lead.segment)?lead.segment:"clarity";
-  const params=new URLSearchParams({datos:JSON.stringify({v:2,n:name,s:segment,c:quizContext(lead)})});
+  const occupation=Number.isInteger(lead.occupation)&&lead.occupation>=0&&lead.occupation<=3?lead.occupation:-1;
+  const params=new URLSearchParams({datos:JSON.stringify({v:3,n:name,s:segment,c:quizContext(lead),p:cleanText(lead.country,40),k:cleanText(lead.country_code,2),o:occupation})});
   return "https://quizfunnelmasinfluenciacalendlysync.vercel.app/copiar#"+params.toString();
 }
 function quizMessageBlocks(messages,copyUrl) {
@@ -357,9 +405,10 @@ export default async function handler(req, res) {
   try {
     const lead = req.body || {};
     const segment = SEGMENT_MAP[lead.segment] || "Claridad de identidad y propósito";
-    const answersText = Array.isArray(lead.answers)
-      ? lead.answers.map(a => `P${a.question}: ${a.answer}`).join("\n")
-      : "";
+    const answersText = [
+      ...(Array.isArray(lead.answers) ? lead.answers.map(a => `P${a.question}: ${a.answer}`) : []),
+      lead.country ? `País: ${cleanText(lead.country, 40)}` : ""
+    ].filter(Boolean).join("\n");
     const scoresText = lead.scores
       ? `Claridad: ${lead.scores.clarity || 0} | Activación: ${lead.scores.action || 0} | Influencia: ${lead.scores.influence || 0} | Alineación: ${lead.scores.alignment || 0}`
       : "";
