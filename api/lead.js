@@ -297,6 +297,27 @@ async function setManychatField(apiKey, subscriberId, fieldName, fieldValue) {
   });
 }
 
+const QUALIFIED_TAG = "LEAD_CALIFICADO";
+async function syncQualifiedTag(apiKey, subscriberId, qualified, account) {
+  try {
+    if (!qualified) {
+      // Si rehace el quiz y ya no califica, se le quita la etiqueta.
+      await manychatPost("/fb/subscriber/removeTagByName", apiKey, { subscriber_id: subscriberId, tag_name: QUALIFIED_TAG }).catch(() => {});
+      return;
+    }
+    try {
+      await manychatPost("/fb/subscriber/addTagByName", apiKey, { subscriber_id: subscriberId, tag_name: QUALIFIED_TAG });
+    } catch (firstError) {
+      // Probablemente la etiqueta no existe en esta cuenta: la creamos y reintentamos una vez.
+      await manychatPost("/fb/page/createTag", apiKey, { name: QUALIFIED_TAG }).catch(() => {});
+      await sleep(350);
+      await manychatPost("/fb/subscriber/addTagByName", apiKey, { subscriber_id: subscriberId, tag_name: QUALIFIED_TAG });
+    }
+  } catch (error) {
+    console.warn(`ManyChat ${QUALIFIED_TAG} tag failed account=${account}: ${error.message}`);
+  }
+}
+
 async function syncQuizToManychat(lead, scoresText) {
   const subscriberId = String(lead.mc_id || "").trim();
   const pid = String(lead.mc_pid || "").trim();
@@ -377,6 +398,10 @@ async function syncQuizToManychat(lead, scoresText) {
       if (successfulFields === 0) {
         throw new Error("No ManyChat fields could be updated for this account");
       }
+
+      // Etiqueta LEAD_CALIFICADO para que ManyChat avise solo por los prospectos calificados.
+      // Si la etiqueta no existe todavía, se crea. Si algo falla, el resto del flujo sigue igual.
+      await syncQualifiedTag(item.key, subscriberId, lead.qualified === true, item.account);
 
       await manychatPost("/fb/subscriber/addTagByName", item.key, {
         subscriber_id: subscriberId,
